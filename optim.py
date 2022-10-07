@@ -34,7 +34,7 @@ class SCRN(Optimizer):
     def step(self, **kwargs):
         for group in self.param_groups:
             for p, hessian in zip(group["params"], self.hes):
-                print(p, p.grad)
+                print(p.shape)
                 delta = self.cubic_regularization(self.eps, p.grad, hessian)
                 p.data += delta
 
@@ -49,11 +49,11 @@ class SCRN(Optimizer):
     def cubic_subsolver(self, grad, hessian, eps):
         g_norm = torch.norm(grad)
         # print(g_norm)
+        print(grad.shape,hessian,grad.T.shape)
         if g_norm > self.l ** 2 / self.rho:
-
             temp = hessian * grad @ grad.T / self.rho / g_norm.pow(2)
             R_c = -temp + torch.sqrt(temp.pow(2) + 2 * g_norm / self.rho)
-            print("----------------", grad.shape, R_c.shape, g_norm)
+
             if len(R_c.shape) == 0:
                 delta = -R_c * grad / g_norm
             else:
@@ -68,6 +68,7 @@ class SCRN(Optimizer):
             for _ in range(self.T_eps):
                 delta -= mu * (g_ + delta * hessian + self.rho / 2 * torch.norm(delta) * delta)
 
+        print(grad.shape,delta.shape,hessian)
         delta_m = grad @ delta.T + hessian * delta @ delta.T / 2 + self.rho / 6 * torch.norm(delta).pow(3)
         return delta, delta_m
 
@@ -82,9 +83,9 @@ class SCRN(Optimizer):
 
 
 if __name__ == '__main__':
-    model = torch.nn.Sequential(torch.nn.Conv2d(3, 3, kernel_size=3, bias=True))
+    model = torch.nn.Sequential(torch.nn.Conv2d(3, 32, kernel_size=3, bias=True))
     scrn = SCRN(model.parameters())
-    x = torch.rand(1, 3, 16, 16)
+    x = torch.rand(32, 3, 16, 16)
     loss = model(x).square().sum()
     loss.backward()
     scrn.hessian(model, x)

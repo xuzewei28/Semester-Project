@@ -7,7 +7,7 @@ import pickle
 class CifarDataset(Dataset):
     """The class RoadDataset loads the data and executes the pre-processing operations on it"""
 
-    def __init__(self, path='data/cifar-10-batches-py', train=1):
+    def __init__(self, path='data/cifar-10-batches-py', train=True):
         train_data, train_filenames, train_labels, test_data, test_filenames, test_labels, label_names = \
             self.load_cifar_10_data(path)
 
@@ -19,6 +19,7 @@ class CifarDataset(Dataset):
             self.labels = test_labels
 
         self.data = torch.tensor(self.data).transpose(1, -1).transpose(2, -1)
+        self.labels = torch.tensor(self.labels).long()
 
     def unpickle(self, file):
         """load the cifar-10 data"""
@@ -93,4 +94,5 @@ class CifarDataset(Dataset):
 
 
 if __name__ == '__main__':
-    pass
+    df = CifarDataset()
+    print(df.__getitem__(1))
