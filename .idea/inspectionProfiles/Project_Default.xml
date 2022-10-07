@@ -1,0 +1,23 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="PyPep8NamingInspection" enabled="true" level="WEAK WARNING" enabled_by_default="true">
+      <option name="ignoredErrors">
+        <list>
+          <option value="N802" />
+          <option value="N801" />
+        </list>
+      </option>
+    </inspection_tool>
+    <inspection_tool class="PyUnresolvedReferencesInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredIdentifiers">
+        <list>
+          <option value="GPy" />
+          <option value="bayesian_optimizer.init_obj_val_arr" />
+          <option value="bayesian_optimizer.init_constr_val_arr" />
+          <option value="bayesian_optimizer.safeopt" />
+        </list>
+      </option>
+    </inspection_tool>
+  </profile>
+</component>
