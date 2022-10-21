@@ -1,6 +1,6 @@
 import os
 import torch.random
-from torch.optim import SGD
+from torch.optim import SGD, Adam
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 from model import *
@@ -10,7 +10,7 @@ from dataset import *
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 Learning_rate = 1e-1
 Batch_size = 1000  # 4
-Num_epochs = 200
+Num_epochs = 40
 Num_workers = 0
 Pin_memory = True
 
@@ -103,21 +103,19 @@ def main(model, name, optimizer):
 
 
 if __name__ == '__main__':
-    models = [OneLayerLinearNet, OneLayerConvNet]
-    names = ["OneLayerLinearNet", "OneLayerConvNet"]
-    flag = True
-    for model, name in zip(models, names):
-        a = model()
-        optimizer = SCRN(a.parameters())
-        name1 = name + 'SCRN'
-        print(name1)
-        main(a, name1, optimizer)
+    models = [OneLayerConvNet]
+    names = ["OneLayerConvNet"]
 
-    momentums = [ 0.9, 0]
+    flag = True
+    ls = [0.1, 1, 10]
+    rhos = [1, 10, 100]
+    lrs = [1e-3, 1e-4]
     for model, name in zip(models, names):
-        for momentum in momentums:
-            a = model()
-            optimizer = SGD(a.parameters(), lr=Learning_rate, momentum=momentum)
-            name1 = name + "_SGD_lr_0.1_momentum_" + str(momentum)
-            print(name1)
-            main(a, name1, optimizer)
+        for l in ls:
+            for rho in rhos:
+                for lr in lrs:
+                    a = model()
+                    optimizer = SCRN(a.parameters(), l_=l, rho=rho*l, flag_adam=True, lr=lr)
+                    name1 = name + '_SCRN_l_' + str(l) + "_rho_" + str(rho*l) + "_lr_" + str(lr)
+                    print(name1)
+                    main(a, name1, optimizer)
