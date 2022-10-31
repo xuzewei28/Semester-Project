@@ -7,7 +7,7 @@ import pickle
 class CifarDataset(Dataset):
     """The class RoadDataset loads the data and executes the pre-processing operations on it"""
 
-    def __init__(self, path='data/cifar-10-batches-py', train=True, one_not=True):
+    def __init__(self, path='data/cifar-10-batches-py', train=True, one_not=True,len_data=None):
         train_data, train_filenames, train_labels, test_data, test_filenames, test_labels, label_names = \
             self.load_cifar_10_data(path)
 
@@ -22,6 +22,10 @@ class CifarDataset(Dataset):
         self.labels = torch.tensor(self.labels).long()
         if one_not:
             self.labels = torch.nn.functional.one_hot(self.labels).float()
+        if len_data is None:
+            self.len_data=len(self.data)
+        else:
+            self.len_data=len_data
 
     def unpickle(self, file):
         """load the cifar-10 data"""
@@ -85,7 +89,7 @@ class CifarDataset(Dataset):
                cifar_test_data, cifar_test_filenames, cifar_test_labels, cifar_label_names
 
     def __len__(self):
-        return len(self.data)
+        return self.len_data
 
     def __getitem__(self, index):
         """This method returns the image at a certain position and its mask"""

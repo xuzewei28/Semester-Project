@@ -6,17 +6,22 @@ from torchsummary import summary
 
 
 class OneLayerConvNet(nn.Module):
-    def __init__(self, input_shape=None, n_class=10):
+    def __init__(self, input_shape=None, n_class=10, n_hidden=32, act=None):
         super().__init__()
+        if act is None:
+            act = nn.ReLU()
         if input_shape == None:
             input_shape = [3, 32, 32]
-        self.conv1 = nn.Conv2d(in_channels=input_shape[0], out_channels=32, kernel_size=3, stride=1, padding=1,
+        self.conv1 = nn.Conv2d(in_channels=input_shape[0], out_channels=n_hidden, kernel_size=3, stride=1,
+                               padding=1,
                                bias=True)
 
-        self.classifier = nn.Linear(8192, n_class, bias=True)
+        self.classifier = nn.Linear(n_hidden * 256, n_class, bias=True)
+        self.act = act
 
     def forward(self, x):
-        x = F.max_pool2d(F.relu(self.conv1(x)), kernel_size=2).flatten(start_dim=1)
+        x = F.max_pool2d(self.act(self.conv1(x)), kernel_size=2).flatten(start_dim=1)
+
         return torch.sigmoid(self.classifier(x))
 
 
@@ -37,6 +42,26 @@ class TwoLayerConvNet(nn.Module):
         return torch.sigmoid(self.classifier(x))
 
 
+class ThreeLayerConvNet(nn.Module):
+    def __init__(self, input_shape=None, n_class=10):
+        super().__init__()
+        if input_shape == None:
+            input_shape = [3, 32, 32]
+        self.conv1 = nn.Conv2d(in_channels=input_shape[0], out_channels=32, kernel_size=3, stride=1, padding=1,
+                               bias=True)
+        self.conv2 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, stride=1, padding=1,
+                               bias=True)
+        self.conv3 = nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, stride=1, padding=1,
+                               bias=True)
+        self.classifier = nn.Linear(2048, n_class, bias=True)
+
+    def forward(self, x):
+        x = F.max_pool2d(F.relu(self.conv1(x)), kernel_size=2)
+        x = F.max_pool2d(F.relu(self.conv2(x)), kernel_size=2)
+        x = F.max_pool2d(F.relu(self.conv3(x)), kernel_size=2).flatten(start_dim=1)
+        return torch.sigmoid(self.classifier(x))
+
+
 class OneLayerLinearNet(nn.Module):
     def __init__(self, input_shape=None, n_class=10):
         super().__init__()
@@ -48,41 +73,44 @@ class OneLayerLinearNet(nn.Module):
         return torch.sigmoid(self.classifier(x.flatten(start_dim=1)))
 
 
-class TwoLayerLinearNet(nn.Module):
-    def __init__(self, input_shape=None, n_class=10):
+class LinearNet(nn.Module):
+    def __init__(self, input_shape=None, n_hidden=128, n_class=10):
         super().__init__()
         if input_shape is None:
             input_shape = [3, 32, 32]
-        self.classifier = nn.Sequential(nn.Linear(input_shape[0] * input_shape[1] * input_shape[2], 1024),
-                                        nn.ReLU(), nn.Linear(1024, n_class))
+        self.classifier = nn.Sequential(
+            nn.Linear(input_shape[0] * input_shape[1] * input_shape[2], n_hidden, bias=True),
+            nn.Linear(n_hidden, n_class))
 
     def forward(self, x):
         return torch.sigmoid(self.classifier(x.flatten(start_dim=1)))
 
 
-class vgg(nn.Module):
-    def __init__(self, n_class=10, input_shape=(3, 32, 32)):
-        super(vgg, self).__init__()
-        model = torchvision.models.vgg11()  # False
-        self.features = model.features
-        for param in self.features.parameters():  # NOTE: prune:True  // finetune:False
-            param.requires_grad = True
-
-        temp = self.features(torch.rand(input_shape)).reshape(-1)
-        self.classifier = nn.Sequential(
-            nn.Dropout(),
-            nn.Linear(temp.shape[0], 1024),
-            nn.ReLU(inplace=True),
-            nn.Dropout(),
-            nn.Linear(1024, 1024),
-            nn.ReLU(inplace=True),
-            nn.Linear(1024, n_class)
-        )
+class TwoLayerLinearNet(nn.Module):
+    def __init__(self, input_shape=None, n_class=10, n_hidden=128):
+        super().__init__()
+        if input_shape is None:
+            input_shape = [3, 32, 32]
+        self.classifier = nn.Sequential(nn.Linear(input_shape[0] * input_shape[1] * input_shape[2], n_hidden),
+                                        nn.ReLU(), nn.Linear(n_hidden, n_class))
 
     def forward(self, x):
-        return self.classifier(self.features(x).flatten(start_dim=1))
+        return torch.sigmoid(self.classifier(x.flatten(start_dim=1)))
+
+
+class ThreeLayerLinearNet(nn.Module):
+    def __init__(self, input_shape=None, n_class=10, n_hidden=128):
+        super().__init__()
+        if input_shape is None:
+            input_shape = [3, 32, 32]
+        self.classifier = nn.Sequential(nn.Linear(input_shape[0] * input_shape[1] * input_shape[2], n_hidden),
+                                        nn.ReLU(), nn.Linear(n_hidden, n_hidden), nn.ReLU(),
+                                        nn.Linear(n_hidden, n_class))
+
+    def forward(self, x):
+        return torch.sigmoid(self.classifier(x.flatten(start_dim=1)))
 
 
 if __name__ == '__main__':
-    net = TwoLayerLinearNet(n_class=10, input_shape=(3, 32, 32))
+    net = OneLayerLinearNet(n_class=10, input_shape=(3, 32, 32))
     print(summary(net.cuda(), input_size=(3, 32, 32)))

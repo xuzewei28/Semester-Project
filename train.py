@@ -10,7 +10,7 @@ from dataset import *
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 Learning_rate = 1e-1
 Batch_size = 1000  # 4
-Num_epochs = 40
+Num_epochs = 400
 Num_workers = 0
 Pin_memory = True
 
@@ -61,11 +61,11 @@ def train_model(model, train_loader, test_loader, optimizer, criterion, T):
             if flag:
                 optimizer.set_f(f)
             optimizer.step()
-            train_log = accuracy(train_loader, model, device, name='train')
-            test_log = accuracy(test_loader, model, device, name='test')
-            log = {k: v for d in (train_log, test_log) for k, v in d.items()}
-            logs.append(log)
-            loop.set_postfix(i=i, loss=loss.item(), train_acc=log['train_acc'], test_acc=log['test_acc'])
+        train_log = accuracy(train_loader, model, device, name='train')
+        test_log = accuracy(test_loader, model, device, name='test')
+        log = {k: v for d in (train_log, test_log) for k, v in d.items()}
+        logs.append(log)
+        loop.set_postfix(i=i, loss=loss.item(), train_acc=log['train_acc'], test_acc=log['test_acc'])
 
     return logs
 
@@ -103,19 +103,24 @@ def main(model, name, optimizer):
 
 
 if __name__ == '__main__':
-    models = [OneLayerConvNet]
-    names = ["OneLayerConvNet"]
-
     flag = True
+
     ls = [0.1, 1, 10]
     rhos = [1, 10, 100]
-    lrs = [1e-3, 1e-4]
-    for model, name in zip(models, names):
-        for l in ls:
-            for rho in rhos:
-                for lr in lrs:
-                    a = model()
-                    optimizer = SCRN(a.parameters(), l_=l, rho=rho*l, flag_adam=True, lr=lr)
-                    name1 = name + '_SCRN_l_' + str(l) + "_rho_" + str(rho*l) + "_lr_" + str(lr)
-                    print(name1)
-                    main(a, name1, optimizer)
+    for l in ls:
+        for rho in rhos:
+            name = "SCRN_L_" + str(l) + "_rho_" + str(l * rho)
+            net = OneLayerConvNet()
+            opt = SCRN(net.parameters(), l_=l, rho=rho*l)
+            print(name)
+            main(net, name, opt)
+            opt.save_log()
+
+            name = "SCRN1_L_" + str(l) + "_rho_" + str(l * rho)
+            net = OneLayerConvNet()
+            opt = SCRN1(net.parameters(), l_=l, rho=rho*l)
+            print(name)
+            main(net, name, opt)
+            opt.save_log()
+
+
