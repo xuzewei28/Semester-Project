@@ -9,7 +9,7 @@ import numpy as np
 
 class SCRN(Optimizer):
     def __init__(self, params, T_eps=10, l_=1,
-                 rho=1, c_=1, eps=1e-9, device=None):
+                 rho=1, c_=1, eps=1e-2, device=None):
         if device is None:
             device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -25,6 +25,10 @@ class SCRN(Optimizer):
         self.device = device
         self.log = []
         self.name = 'SCRN'
+
+    def set_l(self,l,rho):
+        self.l_=l
+        self.rho=rho
 
     def set_f(self, f):
         self.f = f
@@ -62,7 +66,7 @@ class SCRN(Optimizer):
             self.log.append(('2', a.item(), sum([torch.norm(d) for d in delta]).item()))
         return delta
 
-    def save_log(self, path='logs/logs/', flag_param=False):
+    def save_log(self, path='classifier_logs/classifier_logs/', flag_param=False):
         if flag_param:
             name = self.name + "_l_" + str(self.l) + "_rho_" + str(self.rho)
         else:
@@ -100,7 +104,7 @@ class SCRN_Momentum(Optimizer):
     def step(self, **kwargs):
         grad = [p.grad for group in self.param_groups for p in group['params']]
         deltas = self.cubic_regularization(self.eps, grad)
-        self.old_delta = [d1 * self.momentum + (1 - self.momentum) * d2 for d1, d2 in zip(self.old_delta, deltas)]
+        self.old_delta = [d1 * self.momentum + d2 for d1, d2 in zip(self.old_delta, deltas)]
         for group in self.param_groups:
             for p, delta in zip(group["params"], self.old_delta):
                 p.data += delta
@@ -131,7 +135,7 @@ class SCRN_Momentum(Optimizer):
             self.log.append(('2', a.item(), sum([torch.norm(d) for d in delta]).item()))
         return delta
 
-    def save_log(self, path='logs/logs/', flag_param=False):
+    def save_log(self, path='classifier_logs/classifier_logs/', flag_param=False):
         if flag_param:
             name = self.name + "_l_" + str(self.l) + "_rho_" + str(self.rho)
         else:
