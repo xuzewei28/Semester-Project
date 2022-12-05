@@ -7,7 +7,7 @@ import pickle
 class CifarDataset(Dataset):
     """The class RoadDataset loads the data and executes the pre-processing operations on it"""
 
-    def __init__(self, path='data/cifar-10-batches-py', train=True, one_hot=True, len_data=None):
+    def __init__(self, path='data/cifar-10-batches-py', train=True, one_hot=True, len_data=None, type='classifier'):
         train_data, train_filenames, train_labels, test_data, test_filenames, test_labels, label_names = \
             self.load_cifar_10_data(path)
 
@@ -29,10 +29,12 @@ class CifarDataset(Dataset):
         else:
             self.len_data = len_data
 
+        self.type = type
+
     def unpickle(self, file):
         """load the cifar-10 data"""
-
         with open(file, 'rb') as fo:
+
             data = pickle.load(fo, encoding='bytes')
         return data
 
@@ -97,8 +99,10 @@ class CifarDataset(Dataset):
         """This method returns the image at a certain position and its mask"""
         image = self.data[index]
         label = self.labels[index]
-
-        return (image / 255), label
+        if self.type == "auto_encoder":
+            return (image / 255), (image / 255)
+        if self.type == 'classifier':
+            return (image / 255), label
 
 
 if __name__ == '__main__':

@@ -7,6 +7,61 @@ from model import *
 import numpy as np
 
 
+class HVP_RVR(Optimizer):
+    def __init__(self, params, b=0.1, sigma1=1, sigma2=1, l1=1, l2=1, eps=1e-2, lr=1e-1, mode='SGD'):
+        super(HVP_RVR, self).__init__(params, dict())
+        self.f = None
+        self.g = None
+        self.parameters = params
+        self.b = b
+        self.sigma1 = sigma1
+        self.sigma2 = sigma2
+        self.l1 = l1
+        self.l2 = l2
+        self.eps = eps
+        self.lr = lr
+        self.mode = None
+        if mode == 'SGD':
+            self.mode = self.SGD
+
+    def set_f(self, f):
+        self.f = f
+
+    def step(self, **kwargs):
+        self.mode()
+
+    def gradient_estimator(self, x, x_prev, g_prev, b, sigma2, l2, eps):
+        if torch.rand(1) < b or g_prev is None:
+            return [p.grad for p in x]
+        else:
+            K = 5 * (sigma2 ** 2 + l2 * eps) / (b * eps ** 2) * sum(
+                torch.norm(x1 - x2).pow(2) for x1, x2 in zip(x, x_prev))
+            K = min(K, 10)
+            b = x_prev
+            g = g_prev
+            for i in range(1, int(K)):
+                a = [(i / K) * x1 + (1 - i / K) * x2 for x1, x2 in zip(x, x_prev)]
+                h = hvp(self.f, tuple(b), tuple((x1 - x2) for x1, x2 in zip(a, b)))[1]
+                g = [g1 + h1 for g1, h1 in zip(g, h)]
+                b = a
+            return g
+
+    def SGD(self):
+        self.parameters = [p for name in self.param_groups for p in name["params"]]
+        if self.g is None:
+            x_prev = None
+        else:
+            x_prev = [p - g for p, g in zip(self.parameters, self.g)]
+
+        self.g = self.gradient_estimator(self.parameters, x_prev, self.g, self.b, self.sigma2, self.l2,
+                                         self.eps)
+        # print(sum(torch.norm(a) for a in self.g))
+
+        for group in self.param_groups:
+            for p, delta in zip(group["params"], self.g):
+                p.data -= self.lr * delta
+
+
 class SCRN(Optimizer):
     def __init__(self, params, T_eps=10, l_=1,
                  rho=1, c_=1, eps=1e-2, device=None):
@@ -26,9 +81,9 @@ class SCRN(Optimizer):
         self.log = []
         self.name = 'SCRN'
 
-    def set_l(self,l,rho):
-        self.l_=l
-        self.rho=rho
+    def set_l(self, l, rho):
+        self.l_ = l
+        self.rho = rho
 
     def set_f(self, f):
         self.f = f
@@ -185,7 +240,8 @@ class SVRC(Optimizer):
                          zip([p for group in self.param_groups for p in group['params']], self.deltas)]
 
             old_grad = torch.autograd.grad(self.f(*old_param), old_param)
-            self.log.append((sum([torch.norm(o) for o in old_grad]), sum([torch.norm(o) for o in p_grad]), sum([torch.norm(o) for o in self.vt])))
+            self.log.append((sum([torch.norm(o) for o in old_grad]), sum([torch.norm(o) for o in p_grad]),
+                             sum([torch.norm(o) for o in self.vt])))
             self.vt = [g1 - g2 + g3 for g1, g2, g3 in zip(p_grad, old_grad, self.vt)]
         self.deltas = self.cubic_regularization(self.vt, self.Mt, 1 / (16 * self.l_),
                                                 np.sqrt(self.eps / self.rho), 0.5, self.fp / self.T / 3)

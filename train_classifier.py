@@ -10,7 +10,7 @@ from dataset import *
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 Learning_rate = 1e-1
 Batch_size = 500  # 4
-Num_epochs = 500
+Num_epochs = 20
 Num_workers = 0
 Pin_memory = True
 one_hot = True
@@ -62,7 +62,7 @@ def accuracy(loader, model, device, name=''):
 def train_model(model, train_loader, test_loader, optimizer, criterion, T):
     """Train the model"""
     logs = []
-    grad_logs=[]
+    grad_logs = []
     names = list(n for n, _ in model.named_parameters())
     loop = tqdm(range(0, int(T)))
     count = 0
@@ -110,10 +110,10 @@ def train_model(model, train_loader, test_loader, optimizer, criterion, T):
         logs.append(log)
         loop.set_postfix(i=i, loss=loss.item(), train_acc=log['train_acc'], test_acc=log['test_acc'])
 
-    return logs,grad_logs
+    return logs, grad_logs
 
 
-def main(model, path,name, optimizer, criterion):
+def main(model, path, name, optimizer, criterion):
     model.to(device)
 
     dataset = CifarDataset(one_hot=one_hot)
@@ -134,7 +134,7 @@ def main(model, path,name, optimizer, criterion):
         num_workers=Num_workers
     )
 
-    logs,grad_logs = train_model(model, train_loader, test_loader, optimizer, criterion, Num_epochs)
+    logs, grad_logs = train_model(model, train_loader, test_loader, optimizer, criterion, Num_epochs)
     os.makedirs(path, exist_ok=True)
     f = open(path + name, 'w')
     for l in logs:
@@ -150,12 +150,17 @@ def main(model, path,name, optimizer, criterion):
 
 if __name__ == '__main__':
     one_hot = False
-
     flag = True
-    name = "SCRN_Momentum"
-    print(name)
-    model = ResNet()
-    criterion = nn.CrossEntropyLoss()
-    optim = SCRN_Momentum(model.parameters(), l_=1, rho=10, eps=1e-2, momentum=0.9)
-    main(model, "classifier_logs/CrossEntropyLoss/Final/ResNet/", name, criterion=criterion,
-         optimizer=optim)
+    # eps 1e-1 (simga1 1) l2 10 l1 1 simga2 1 ni 0.29
+    for lr in [1e-3]:
+        for b in [0.1, 0.3]:
+            for sigma2 in [0.1, 1, 10, 20]:
+                for l2 in [0.1, 1, 10, 20]:
+                    for eps in [1e-1, 1e-2, 1e-3]:
+                        name = 'lR_{0}_B_{1}_sigma_{2}_l2_{3}_eps_{4} '.format(lr, b, sigma2, l2, eps)
+                        print(name)
+                        model = ResNet()
+                        criterion = nn.CrossEntropyLoss()
+                        optim = HVP_RVR(model.parameters(), lr=lr, b=b, sigma2=sigma2, l2=l2)
+                        main(model, "prova/ResNet/", name, criterion=criterion,
+                             optimizer=optim)

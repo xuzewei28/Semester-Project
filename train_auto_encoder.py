@@ -10,7 +10,7 @@ from dataset import *
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 Learning_rate = 1e-1
 Batch_size = 500  # 4
-Num_epochs = 500
+Num_epochs = 20
 Pin_memory = True
 
 torch.manual_seed(0)
@@ -110,28 +110,16 @@ def main(model, optimizer, criterion=nn.MSELoss(), name="AutoEncoder", path='Aut
 
 
 if __name__ == '__main__':
-    name = "Adam"
-    model = LinearAutoEncoder()
-    optim = Adam(model.parameters(), lr=1e-3)
-    main(model, path="Auto_Encoder_logs/Final/", name=name, optimizer=optim)
-
-    name = "SGD_Momentum"
-    model = LinearAutoEncoder()
-    optim = SGD(model.parameters(),lr=0.1, momentum=0.9)
-    main(model, path="Auto_Encoder_logs/Final/", name=name, optimizer=optim)
-
-    name = "SGD"
-    model = LinearAutoEncoder()
-    optim = SGD(model.parameters(),lr=0.1, momentum=0)
-    main(model, path="Auto_Encoder_logs/Final/", name=name, optimizer=optim)
-
     flag = True
-    name = "SCRN_Momentum"
-    model = LinearAutoEncoder()
-    optim = SCRN_Momentum(model.parameters(), l_=0.1, rho=2, eps=1e-2, momentum=0.9)
-    main(model, path="Auto_Encoder_logs/Final/", name=name, optimizer=optim)
-
-    name = "SCRN"
-    model = LinearAutoEncoder()
-    optim = SCRN_Momentum(model.parameters(), l_=0.1, rho=0.5, eps=1e-2, momentum=0)
-    main(model, path="Auto_Encoder_logs/Final/", name=name, optimizer=optim)
+    # eps 1e-1 (simga1 1) l2 10 l1 1 simga2 1 ni 0.29
+    for lr in [1e-3]:
+        for b in [0.1, 0.3]:
+            for sigma2 in [0.1, 1, 10, 20]:
+                for l2 in [0.1, 1, 10, 20]:
+                    for eps in [1e-1, 1e-2, 1e-3]:
+                        name = 'lR_{0}_B_{1}_sigma_{2}_l2_{3}_eps_{4} '.format(lr, b, sigma2, l2, eps)
+                        print(name)
+                        model = LinearAutoEncoder()
+                        optim = HVP_RVR(model.parameters(), lr=lr, b=b, sigma2=sigma2, l2=l2)
+                        main(model, path="autoencoder_prova/", name=name,
+                             optimizer=optim)
