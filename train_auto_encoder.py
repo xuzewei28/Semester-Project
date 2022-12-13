@@ -10,7 +10,7 @@ from dataset import *
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 Learning_rate = 1e-1
 Batch_size = 500  # 4
-Num_epochs = 20
+Num_epochs = 100
 Pin_memory = True
 
 torch.manual_seed(0)
@@ -101,7 +101,7 @@ def main(model, optimizer, criterion=nn.MSELoss(), name="AutoEncoder", path='Aut
         f.write(str(l) + '\n')
     f.close()
 
-    os.makedirs("grad/"+path, exist_ok=True)
+    os.makedirs("grad/" + path, exist_ok=True)
     f = open("grad/" + path + name, 'w')
     for l in grad_logs:
         f.write(str(l) + '\n')
@@ -112,14 +112,14 @@ def main(model, optimizer, criterion=nn.MSELoss(), name="AutoEncoder", path='Aut
 if __name__ == '__main__':
     flag = True
     # eps 1e-1 (simga1 1) l2 10 l1 1 simga2 1 ni 0.29
-    for lr in [1e-3]:
+    for lr in [1e-2,1e-3,1e-4]:
         for b in [0.1, 0.3]:
             for sigma2 in [0.1, 1, 10, 20]:
                 for l2 in [0.1, 1, 10, 20]:
-                    for eps in [1e-1, 1e-2, 1e-3]:
+                    for eps in [1e-2]:
                         name = 'lR_{0}_B_{1}_sigma_{2}_l2_{3}_eps_{4} '.format(lr, b, sigma2, l2, eps)
                         print(name)
                         model = LinearAutoEncoder()
                         optim = HVP_RVR(model.parameters(), lr=lr, b=b, sigma2=sigma2, l2=l2)
-                        main(model, path="autoencoder_prova/", name=name,
+                        main(model, path="Auto_Encoder_logs/HVP_RVR/", name=name,
                              optimizer=optim)

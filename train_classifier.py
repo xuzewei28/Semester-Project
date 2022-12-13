@@ -10,7 +10,7 @@ from dataset import *
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 Learning_rate = 1e-1
 Batch_size = 500  # 4
-Num_epochs = 20
+Num_epochs = 100
 Num_workers = 0
 Pin_memory = True
 one_hot = True
@@ -152,15 +152,15 @@ if __name__ == '__main__':
     one_hot = False
     flag = True
     # eps 1e-1 (simga1 1) l2 10 l1 1 simga2 1 ni 0.29
-    for lr in [1e-3]:
+    for lr in [1e-2]:
         for b in [0.1, 0.3]:
             for sigma2 in [0.1, 1, 10, 20]:
                 for l2 in [0.1, 1, 10, 20]:
-                    for eps in [1e-1, 1e-2, 1e-3]:
+                    for eps in [1e-2]:
                         name = 'lR_{0}_B_{1}_sigma_{2}_l2_{3}_eps_{4} '.format(lr, b, sigma2, l2, eps)
                         print(name)
                         model = ResNet()
                         criterion = nn.CrossEntropyLoss()
                         optim = HVP_RVR(model.parameters(), lr=lr, b=b, sigma2=sigma2, l2=l2)
-                        main(model, "prova/ResNet/", name, criterion=criterion,
+                        main(model, "classifier_logs/CrossEntropyLoss/HVP_RVR/ResNet/", name, criterion=criterion,
                              optimizer=optim)

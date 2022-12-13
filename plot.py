@@ -36,9 +36,12 @@ a = []
 names = ["Adam", "SGD", "SGD_Momentum", "SCRN"]
 names = os.listdir(dir)
 for name in names:
+    if 'ResNet' in name:
+        continue
     v, i, last = plot_ris(dir + name, axs, '', name, size=size)
     a.append((dir + name, v, i, last))
 
+a.sort(key=lambda x:x[1])
 for i in a:
     print(i)
 plt.savefig("ResNet.png")

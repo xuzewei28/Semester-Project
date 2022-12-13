@@ -51,7 +51,7 @@ class HVP_RVR(Optimizer):
         if self.g is None:
             x_prev = None
         else:
-            x_prev = [p - g for p, g in zip(self.parameters, self.g)]
+            x_prev = [p + self.lr*g for p, g in zip(self.parameters, self.g)]
 
         self.g = self.gradient_estimator(self.parameters, x_prev, self.g, self.b, self.sigma2, self.l2,
                                          self.eps)
