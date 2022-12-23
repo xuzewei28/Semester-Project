@@ -7,8 +7,25 @@ from model import *
 import numpy as np
 
 
+class Adaptive_SGD(Optimizer):
+    def __init__(self, params, lr=1e-1, f=lambda x: x, T=100):
+        super(Adaptive_SGD, self).__init__(params, dict())
+        self.f = f
+        self.lr = lr
+        self.T = T
+        self.count = 0
+
+    def step(self, **kwargs):
+        lr = self.lr / self.f(1 + self.count // self.T)
+        for group in self.param_groups:
+            for p in group["params"]:
+                p.data -= lr * p.grad
+        self.count += 1
+
+
 class HVP_RVR(Optimizer):
-    def __init__(self, params, b=0.1, sigma1=1, sigma2=1, l1=1, l2=1, eps=1e-2, lr=1e-1, mode='SGD'):
+    def __init__(self, params, b=0.1, sigma1=1, sigma2=1, l1=1, l2=1, eps=1e-2, lr=1e-1, mode='SGD'
+                 , adaptive=False, T=100, func=lambda x: x):
         super(HVP_RVR, self).__init__(params, dict())
         self.f = None
         self.g = None
@@ -23,6 +40,14 @@ class HVP_RVR(Optimizer):
         self.mode = None
         if mode == 'SGD':
             self.mode = self.SGD
+        elif mode == "SCRN":
+            self.mode = self.SCRN
+        self.adaptive = adaptive
+        self.func = func
+        self.T = T
+        self.count = 0
+        self.device = 'cuda'
+        self.deltas=None
 
     def set_f(self, f):
         self.f = f
@@ -36,6 +61,10 @@ class HVP_RVR(Optimizer):
         else:
             K = 5 * (sigma2 ** 2 + l2 * eps) / (b * eps ** 2) * sum(
                 torch.norm(x1 - x2).pow(2) for x1, x2 in zip(x, x_prev))
+            print(K,sigma2,l2,eps,sum(
+                torch.norm(x1 - x2).pow(2) for x1, x2 in zip(x, x_prev)),sum(
+                torch.norm(x1 ).pow(2) for x1, x2 in zip(x, x_prev)),sum(
+                torch.norm( x2).pow(2) for x1, x2 in zip(x, x_prev)))
             K = min(K, 10)
             b = x_prev
             g = g_prev
@@ -47,11 +76,19 @@ class HVP_RVR(Optimizer):
             return g
 
     def SGD(self):
+        if self.adaptive:
+            lr = self.lr / self.func(1 + self.count // self.T)
+        else:
+            lr = self.lr
         self.parameters = [p for name in self.param_groups for p in name["params"]]
         if self.g is None:
             x_prev = None
         else:
-            x_prev = [p + self.lr*g for p, g in zip(self.parameters, self.g)]
+            if self.adaptive:
+                lr_prev = self.lr / self.func(1 + (self.count - 1) // self.T)
+            else:
+                lr_prev = self.lr
+            x_prev = [p + lr_prev * g for p, g in zip(self.parameters, self.g)]
 
         self.g = self.gradient_estimator(self.parameters, x_prev, self.g, self.b, self.sigma2, self.l2,
                                          self.eps)
@@ -59,7 +96,46 @@ class HVP_RVR(Optimizer):
 
         for group in self.param_groups:
             for p, delta in zip(group["params"], self.g):
-                p.data -= self.lr * delta
+                p.data -= lr * delta
+        self.count += 1
+
+    def SCRN(self, **kwargs):
+        self.parameters = [p for name in self.param_groups for p in name["params"]]
+        if self.g is None or self.deltas is None:
+            x_prev = None
+        else:
+            x_prev = [p.data - g for p, g in zip(self.parameters, self.deltas)]
+
+        self.g = self.gradient_estimator(self.parameters, x_prev, self.g, self.b, self.sigma2, self.l2,
+                                         self.eps)
+        self.deltas = self.cubic_regularization(self.eps, self.g, self.l1, 5*self.l2)
+        for group in self.param_groups:
+            for p, delta in zip(group["params"], self.deltas):
+                p.data += delta
+
+    def cubic_regularization(self, eps, grad, l_, rho, c_=1, T_eps=10):
+        g_norm = [torch.norm(g) for g in grad]
+        a = sum(g_norm)
+        if a >= ((l_ ** 2) / rho):
+            hgp = hvp(self.f, tuple(p for group in self.param_groups for p in group['params']),
+                      tuple(p.grad for group in self.param_groups for p in group['params']))[1]
+            temp = [g.reshape(-1) @ h.reshape(-1) / rho / a.pow(2) for g, h in zip(grad, hgp)]
+            R_c = [(-t + torch.sqrt(t.pow(2) + 2 * a / rho)) for t in temp]
+            delta = [-r * g / a for r, g in zip(R_c, grad)]
+        else:
+            delta = [torch.zeros(g.size()).to(self.device) for g in grad]
+            sigma = c_ * (eps * rho) ** 0.5 / l_
+            mu = 1.0 / (20.0 * l_)
+            vec = [(torch.rand(g.size()) * 2 + torch.ones(g.size())).to(self.device) for g in grad]
+            vec = [v / torch.norm(v) for v in vec]
+            g_ = [g + sigma * v for g, v in zip(grad, vec)]
+            for j in range(T_eps):
+                hdp = hvp(self.f, tuple(p for group in self.param_groups for p in group['params']),
+                          tuple(delta))[1]
+                delta = [(d - mu * (g + h + rho / 2 * torch.norm(d) * d)) for g, d, h in zip(g_, delta, hdp)]
+                # g_m = [(g + h + self.rho / 2 * torch.norm(d) * d) for g, d, h in zip(g_, delta2, hdp)]
+                # d2_norm = [torch.norm(d) for d in g_m]
+        return delta
 
 
 class SCRN(Optimizer):
