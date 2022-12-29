@@ -12,12 +12,14 @@ from dataset import *
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 Learning_rate = 1e-1
 Batch_size = 500  # 4
-Num_epochs = 50
+Num_epochs = 300
 Pin_memory = True
 
 torch.manual_seed(0)
 torch.cuda.manual_seed(0)
 flag = False
+data_set = 'cifar-100'
+input_shape = [3, 32, 32]
 
 
 def accuracy(loader, model, criterion, optimizer, device, name=''):
@@ -85,7 +87,7 @@ def main(model, optimizer, criterion=nn.MSELoss(), name="AutoEncoder", path='Aut
     print(name)
     model.to(device)
 
-    dataset = CifarDataset(type="auto_encoder")
+    dataset = CifarDataset(type="auto_encoder",data=data_set)
     train_loader = DataLoader(
         dataset,
         batch_size=Batch_size,
@@ -94,7 +96,7 @@ def main(model, optimizer, criterion=nn.MSELoss(), name="AutoEncoder", path='Aut
         num_workers=0
     )
 
-    dataset = CifarDataset(train=False, type="auto_encoder")
+    dataset = CifarDataset(train=False, type="auto_encoder",data=data_set)
     test_loader = DataLoader(
         dataset,
         batch_size=Batch_size,
@@ -119,89 +121,70 @@ def main(model, optimizer, criterion=nn.MSELoss(), name="AutoEncoder", path='Aut
 
 
 if __name__ == '__main__':
-    """name = 'SGD_lR_{0}'.format(1e-1)
-    model = LinearAutoEncoder()
-    optim = SGD(model.parameters(), lr=1e-1)
-    main(model, path="Final_logs/AutoEncoder/", name=name,
+    """for lr in [1e-1, 3e-2, 1e-2]:
+        for momentum in [0, 0.9]:
+            name = 'SGD_lr_{0}_momentum_{1}'.format(lr, momentum)
+            model = LinearAutoEncoder(input_shape=input_shape)
+            optim = SGD(model.parameters(), lr=lr, momentum=momentum)
+            main(model, path="GridSearchLogs/LinearAutoEncoder/", name=name,
+                 optimizer=optim)
+
+
+
+    flag = True
+    for l in [0.1, 1, 10]:
+        for rho in [5, 10]:
+            name = 'SCRN_l_{0}_rho_{1}'.format(l, rho * l)
+            model = LinearAutoEncoder(input_shape=input_shape)
+            optim = SCRN(model.parameters(), l_=l, rho=rho * l)
+            main(model, path="GridSearchLogs/LinearAutoEncoder/", name=name,
+                 optimizer=optim)
+
+
+
+    for lr in [1e-1, 1e-2]:
+        for sigma2 in [0.1, 1, 10]:
+            for l2 in [0.1, 1, 10]:
+                name = 'HVP_RVR_SGD_lr_{0}_b_{1}_sigma2_{2}_l2_{3}'.format(lr, 0.3, sigma2, l2)
+                model = LinearAutoEncoder(input_shape=input_shape)
+                optim = HVP_RVR(model.parameters(), lr=lr, b=0.3, sigma2=sigma2, l2=l2)
+                main(model, path="GridSearchLogs/LinearAutoEncoder/", name=name,
+                     optimizer=optim)"""
+
+    name = 'SGD_lr_{0}_momentum_{1}'.format(0.1, 0)
+    model = LinearAutoEncoder(input_shape=input_shape)
+    optim = SGD(model.parameters(), lr=0.1, momentum=0)
+    main(model, path="Cifar100/LinearAutoEncoder/", name=name,
          optimizer=optim)
 
-    name = 'SGD_lR_{0}_Momentum_{1}'.format(1e-1, 0.9)
-    model = LinearAutoEncoder()
-    optim = SGD(model.parameters(), lr=1e-1, momentum=0.9)
-    main(model, path="Final_logs/AutoEncoder/", name=name,
+    name = 'SGD_lr_{0}_momentum_{1}'.format(0.1, 0.9)
+    model = LinearAutoEncoder(input_shape=input_shape)
+    optim = SGD(model.parameters(), lr=0.1, momentum=0.9)
+    main(model, path="Cifar100/LinearAutoEncoder/", name=name,
          optimizer=optim)
 
-    name = 'ADAM_lR_{0}'.format(1e-3)
-    model = LinearAutoEncoder()
+    name = 'Adam_lr_{0}'.format(1e-3)
+    model = LinearAutoEncoder(input_shape=input_shape)
     optim = Adam(model.parameters(), lr=1e-3)
-    main(model, path="Final_logs/AutoEncoder/", name=name,
+    main(model, path="Cifar100/LinearAutoEncoder/", name=name,
+         optimizer=optim)
+
+    name = 'Storm_lr_{0}'.format(1e-1)
+    model = LinearAutoEncoder(input_shape=input_shape)
+    optim = StormOptimizer(model.parameters(), lr=1e-1)
+    main(model, path="Cifar100/LinearAutoEncoder/", name=name,
          optimizer=optim)
 
     flag = True
-    name = 'SCRN_l_{0}_RHO_{1}'.format(1e-1, 0.5)
-    model = LinearAutoEncoder()
+    name = 'SCRN_l_{0}_rho_{1}'.format(0.1, 0.5)
+    model = LinearAutoEncoder(input_shape=input_shape)
     optim = SCRN(model.parameters(), l_=0.1, rho=0.5)
-    main(model, path="Final_logs/AutoEncoder/", name=name,
+    main(model, path="Cifar100/LinearAutoEncoder/", name=name,
          optimizer=optim)
 
-    name = 'HVP_RVR_SGD_lr_{0}_b_{1}_sigma2_{2}_l2_{3}'.format(1e-2, 0.3, 0.1, 0.1)
-    model = LinearAutoEncoder()
-    optim = HVP_RVR(model.parameters(), lr=0.01, b=0.3, sigma2=0.1, l2=0.1)
-    main(model, path="Final_logs/AutoEncoder/", name=name,
+    name = 'HVP_RVR_SGD_lr_{0}_b_{1}_sigma2_{2}_l2_{3}'.format(0.1, 0.3, 0.1, 1)
+    model = LinearAutoEncoder(input_shape=input_shape)
+    optim = HVP_RVR(model.parameters(), lr=0.1, b=0.3, sigma2=0.1, l2=1)
+    main(model, path="Cifar100/LinearAutoEncoder/", name=name,
          optimizer=optim)
 
-    name = 'HVP_RVR_SGD_lr_{0}_b_{1}_sigma2_{2}_l2_{3}'.format(1e-1, 0.3, 0.1, 0.1)
-    model = LinearAutoEncoder()
-    optim = HVP_RVR(model.parameters(), lr=0.1, b=0.3, sigma2=0.1, l2=0.1)
-    main(model, path="Final_logs/AutoEncoder/", name=name,
-         optimizer=optim)"""
-
-    """name = 'Adaptive_SGD_lR_{0}_t'.format(1e-1)
-    model = LinearAutoEncoder()
-    optim = Adaptive_SGD(model.parameters(), lr=1e-1, f=lambda x: x)
-    main(model, path="Final_logs/AutoEncoder/", name=name,
-         optimizer=optim)
-
-    name = 'Adaptive_SGD_lR_{0}_sqrt_t'.format(1e-1)
-    model = LinearAutoEncoder()
-    optim = Adaptive_SGD(model.parameters(), lr=1e-1, f=lambda x: np.sqrt(x))
-    main(model, path="Final_logs/AutoEncoder/", name=name,
-         optimizer=optim)
-
-    flag = True
-
-    name = 'Adaptive_HVP_RVR_SGD_lr_{0}_b_{1}_sigma2_{2}_l2_{3}_t'.format(1e-1, 0.3, 0.1, 0.1)
-    model = LinearAutoEncoder()
-    optim = HVP_RVR(model.parameters(), lr=0.1, b=0.3, sigma2=0.1, l2=0.1, adaptive=True, func=lambda x: x)
-    main(model, path="Final_logs/AutoEncoder/", name=name,
-         optimizer=optim)
-
-    name = 'Adaptive_HVP_RVR_SGD_lr_{0}_b_{1}_sigma2_{2}_l2_{3}_sqrt_t'.format(1e-1, 0.3, 0.1, 0.1)
-    model = LinearAutoEncoder()
-    optim = HVP_RVR(model.parameters(), lr=0.1, b=0.3, sigma2=0.1, l2=0.1, adaptive=True, func=lambda x: np.sqrt(x))
-    main(model, path="Final_logs/AutoEncoder/", name=name,
-         optimizer=optim)"""
-
-    flag = True
-    """for bs in [500]:
-        for b in [0.3, 0.1]:
-            for sigma2 in [0.1, 1, 10]:
-                for l1 in [0.1, 1, 10]:
-                    for l2 in [1, 5, 10]:
-                        try:
-                            Batch_size = bs
-                            name = 'HVP_RVR_SCRN_b_{0}_sigma2_{1}_l1_{2}_l2_{3}_bs_{4}'.format(b, sigma2, l1,
-                                                                                               l2 * l1, bs)
-                            model = LinearAutoEncoder()
-                            optim = HVP_RVR(model.parameters(), b=b, sigma2=sigma2, l1=l1, l2=l2 * l1,
-                                            mode='SCRN')
-                            main(model, path="Prova/AutoEncoder/", name=name,
-                                 optimizer=optim)
-                        except:
-                            print("error")"""
-
-    model = LinearAutoEncoder()
-    optim = HVP_RVR(model.parameters(), b=0.3, sigma2=1, l1=1, l2=5,
-                    mode='SCRN')
-    main(model, path="Prova/AutoEncoder/", name='',
-         optimizer=optim)

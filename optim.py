@@ -61,10 +61,10 @@ class HVP_RVR(Optimizer):
         else:
             K = 5 * (sigma2 ** 2 + l2 * eps) / (b * eps ** 2) * sum(
                 torch.norm(x1 - x2).pow(2) for x1, x2 in zip(x, x_prev))
-            print(K,sigma2,l2,eps,sum(
+            """print(K,sigma2,l2,eps,sum(
                 torch.norm(x1 - x2).pow(2) for x1, x2 in zip(x, x_prev)),sum(
                 torch.norm(x1 ).pow(2) for x1, x2 in zip(x, x_prev)),sum(
-                torch.norm( x2).pow(2) for x1, x2 in zip(x, x_prev)))
+                torch.norm( x2).pow(2) for x1, x2 in zip(x, x_prev)))"""
             K = min(K, 10)
             b = x_prev
             g = g_prev

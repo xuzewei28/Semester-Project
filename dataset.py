@@ -3,13 +3,26 @@ from torch.utils.data import Dataset
 import numpy as np
 import pickle
 
+from torchvision import datasets
+
 
 class CifarDataset(Dataset):
     """The class RoadDataset loads the data and executes the pre-processing operations on it"""
 
-    def __init__(self, path='data/cifar-10-batches-py', train=True, one_hot=True, len_data=None, type='classifier'):
-        train_data, train_filenames, train_labels, test_data, test_filenames, test_labels, label_names = \
-            self.load_cifar_10_data(path)
+    def __init__(self, path='data/cifar-10-batches-py', train=True, one_hot=True, len_data=None, type='classifier',
+                 data='cifar-10'):
+        if data == 'cifar-10':
+            train_data, train_filenames, train_labels, test_data, test_filenames, test_labels, label_names = \
+                self.load_cifar_10_data(path)
+        elif data == 'mnist':
+            train_data, train_labels, test_data, test_labels = \
+                self.load_mnist_data()
+        elif data=='cifar-100':
+            train_data, train_labels, test_data, test_labels = \
+                self.load_cifar_100_data()
+
+        else:
+            train_data, train_labels, test_data, test_labels=None,None,None,None
 
         if train:
             self.data = train_data
@@ -34,9 +47,30 @@ class CifarDataset(Dataset):
     def unpickle(self, file):
         """load the cifar-10 data"""
         with open(file, 'rb') as fo:
-
             data = pickle.load(fo, encoding='bytes')
         return data
+
+    def load_mnist_data(self):
+        mnist_train_set = datasets.MNIST('./data/mnist/', train=True, download=True)
+        mnist_test_set = datasets.MNIST('./data/mnist/', train=False, download=True)
+
+        train_input = mnist_train_set.data.view(-1, 28, 28,1).float()
+        train_target = mnist_train_set.targets
+        test_input = mnist_test_set.data.view(-1, 28, 28,1).float()
+        test_target = mnist_test_set.targets
+
+        return train_input, train_target, test_input, test_target
+
+    def load_cifar_100_data(self):
+        train_set = datasets.CIFAR100('./data/cifar100/', train=True)
+        test_set = datasets.CIFAR100('./data/cifar100/', train=False)
+
+        train_input = train_set.data
+        train_target = train_set.targets
+        test_input = test_set.data
+        test_target = test_set.targets
+
+        return train_input, train_target, test_input, test_target
 
     def load_cifar_10_data(self, data_dir, negatives=False):
         """
@@ -106,5 +140,6 @@ class CifarDataset(Dataset):
 
 
 if __name__ == '__main__':
-    df = CifarDataset()
-    print(df.__getitem__(1))
+    df = CifarDataset(data='cifar-100')
+    x,y=df.__getitem__(1)
+    print(x.shape,y)
