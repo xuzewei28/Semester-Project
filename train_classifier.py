@@ -23,8 +23,8 @@ torch.cuda.manual_seed(0)
 flag = False
 flag_svrc = False
 input_shape = [3, 32, 32]
-data_set = 'cifar-10'
-n_class = 10
+data_set = 'cifar-100'
+n_class = 100
 
 
 class Regularization(nn.Module):
@@ -156,46 +156,46 @@ if __name__ == '__main__':
     main(model, path="Cifar10/ResNet" + str(1) + "/", name=name,
          optimizer=optim)"""
 
-    """for i in range(1,2):
+    for i in range(3):
         flag = False
-        name = 'SGD_lr_{0}_momentum_{1}'.format(0.01, 0)
+        name = 'SGD_lr_{0}_momentum_{1}'.format(0.1, 0)
         model = OneLayerLinearNet(input_shape=input_shape, n_class=n_class)
-        optim = SGD(model.parameters(), lr=0.01, momentum=0)
-        main(model, path="Cifar10/OneLayerLinearNet" + str(i) + "/", name=name,
+        optim = SGD(model.parameters(), lr=0.1, momentum=0)
+        main(model, path="Cifar100/OneLayerLinearNet" + str(i) + "/", name=name,
              optimizer=optim)
 
-        name = 'SGD_lr_{0}_momentum_{1}'.format(0.003, 0.9)
+        name = 'SGD_lr_{0}_momentum_{1}'.format(0.03, 0.9)
         model = OneLayerLinearNet(input_shape=input_shape, n_class=n_class)
-        optim = SGD(model.parameters(), lr=0.003, momentum=0.9)
-        main(model, path="Cifar10/OneLayerLinearNet" + str(i) + "/", name=name,
+        optim = SGD(model.parameters(), lr=0.03, momentum=0.9)
+        main(model, path="Cifar100/OneLayerLinearNet" + str(i) + "/", name=name,
              optimizer=optim)
 
         name = 'Adam_lr_{0}'.format(1e-3)
         model = OneLayerLinearNet(input_shape=input_shape, n_class=n_class)
         optim = Adam(model.parameters(), lr=1e-3)
-        main(model, path="Cifar10/OneLayerLinearNet" + str(i) + "/", name=name,
+        main(model, path="Cifar100/OneLayerLinearNet" + str(i) + "/", name=name,
              optimizer=optim)
 
         name = 'Storm_lr_{0}'.format(1e-1)
         model = OneLayerLinearNet(input_shape=input_shape, n_class=n_class)
         optim = StormOptimizer(model.parameters(), lr=1e-1)
-        main(model, path="Cifar10/OneLayerLinearNet" + str(i) + "/", name=name,
+        main(model, path="Cifar100/OneLayerLinearNet" + str(i) + "/", name=name,
              optimizer=optim)
 
         flag = True
-        name = 'SCRN_l_{0}_rho_{1}'.format(1, 10)
+        name = 'SCRN_l_{0}_rho_{1}'.format(1, 5)
         model = OneLayerLinearNet(input_shape=input_shape, n_class=n_class)
-        optim = SCRN(model.parameters(), l_=1, rho=10)
-        main(model, path="Cifar10/OneLayerLinearNet" + str(i) + "/", name=name,
+        optim = SCRN(model.parameters(), l_=1, rho=5)
+        main(model, path="Cifar100/OneLayerLinearNet" + str(i) + "/", name=name,
              optimizer=optim)
 
-        name = 'HVP_RVR_SGD_lr_{0}_b_{1}_sigma2_{2}_l2_{3}'.format(0.01, 0.3, 1, 0.1)
+        name = 'HVP_RVR_SGD_lr_{0}_b_{1}_sigma2_{2}_l2_{3}'.format(0.01, 0.3, 0.1, 0.1)
         model = OneLayerLinearNet(input_shape=input_shape, n_class=n_class)
-        optim = HVP_RVR(model.parameters(), lr=0.01, b=0.3, sigma2=1, l2=0.1)
-        main(model, path="Cifar10/OneLayerLinearNet" + str(i) + "/", name=name,
+        optim = HVP_RVR(model.parameters(), lr=0.01, b=0.3, sigma2=0.1, l2=0.1)
+        main(model, path="Cifar100/OneLayerLinearNet" + str(i) + "/", name=name,
              optimizer=optim)
 
-        flag = False
+        """flag = False
         name = 'SGD_lr_{0}_momentum_{1}'.format(0.1, 0)
         model = ResNet(input_shape=input_shape, n_class=n_class)
         optim = SGD(model.parameters(), lr=0.1, momentum=0)
@@ -233,7 +233,7 @@ if __name__ == '__main__':
         main(model, path="Cifar10/ResNet" + str(i) + "/", name=name,
              optimizer=optim)"""
 
-    input_shape = [1, 28, 28]
+    """input_shape = [1, 28, 28]
     data_set = 'mnist'
     Num_epochs = 100
 
@@ -360,3 +360,4 @@ if __name__ == '__main__':
     optim = SCRN(model.parameters(), l_=0.1, rho=1)
     main(model, path="MNIST/ResNet" + str(2) + "/", name=name,
          optimizer=optim)
+    """
