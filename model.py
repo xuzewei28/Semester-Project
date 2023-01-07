@@ -122,18 +122,22 @@ class VariationalAutoEncoder(nn.Module):
         return self.decoder(z)
 
 
-
-
 class ResNet(nn.Module):
     def __init__(self, input_shape=None, n_class=10):
         super().__init__()
+        self.input_layer = None
         if input_shape == None:
             input_shape = [3, 32, 32]
+        if input_shape[0] != 3:
+            self.input_layer = lambda x: torch.cat([x, x, x], dim=1)
         self.res = torchvision.models.resnet18()
         self.res.fc = nn.Linear(512, n_class)
 
     def forward(self, x):
-        return torch.sigmoid(self.res(x))
+        if self.input_layer is not None:
+            x = self.input_layer(x)
+
+        return self.res(x)
 
 
 class OneLayerConvNet(nn.Module):

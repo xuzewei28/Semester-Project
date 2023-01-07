@@ -87,7 +87,7 @@ def main(model, optimizer, criterion=nn.MSELoss(), name="AutoEncoder", path='Aut
     print(name)
     model.to(device)
 
-    dataset = CifarDataset(type="auto_encoder",data=data_set)
+    dataset = CifarDataset(type="auto_encoder", data=data_set)
     train_loader = DataLoader(
         dataset,
         batch_size=Batch_size,
@@ -96,7 +96,7 @@ def main(model, optimizer, criterion=nn.MSELoss(), name="AutoEncoder", path='Aut
         num_workers=0
     )
 
-    dataset = CifarDataset(train=False, type="auto_encoder",data=data_set)
+    dataset = CifarDataset(train=False, type="auto_encoder", data=data_set)
     test_loader = DataLoader(
         dataset,
         batch_size=Batch_size,
@@ -121,70 +121,143 @@ def main(model, optimizer, criterion=nn.MSELoss(), name="AutoEncoder", path='Aut
 
 
 if __name__ == '__main__':
-    """for lr in [1e-1, 3e-2, 1e-2]:
-        for momentum in [0, 0.9]:
-            name = 'SGD_lr_{0}_momentum_{1}'.format(lr, momentum)
-            model = LinearAutoEncoder(input_shape=input_shape)
-            optim = SGD(model.parameters(), lr=lr, momentum=momentum)
-            main(model, path="GridSearchLogs/LinearAutoEncoder/", name=name,
-                 optimizer=optim)
+    """for i in range(2):
+        flag = False
+        name = 'SGD_lr_{0}_momentum_{1}'.format(0.1, 0)
+        model = LinearAutoEncoder(input_shape=input_shape)
+        optim = SGD(model.parameters(), lr=0.1, momentum=0)
+        main(model, path="Cifar100/LinearAutoEncoder" + str(i) + "/", name=name,
+             optimizer=optim)
 
+        name = 'SGD_lr_{0}_momentum_{1}'.format(0.1, 0.9)
+        model = LinearAutoEncoder(input_shape=input_shape)
+        optim = SGD(model.parameters(), lr=0.1, momentum=0.9)
+        main(model, path="Cifar100/LinearAutoEncoder" + str(i) + "/", name=name,
+             optimizer=optim)
 
+        name = 'Adam_lr_{0}'.format(1e-3)
+        model = LinearAutoEncoder(input_shape=input_shape)
+        optim = Adam(model.parameters(), lr=1e-3)
+        main(model, path="Cifar100/LinearAutoEncoder" + str(i) + "/", name=name,
+             optimizer=optim)
+
+        name = 'Storm_lr_{0}'.format(1e-1)
+        model = LinearAutoEncoder(input_shape=input_shape)
+        optim = StormOptimizer(model.parameters(), lr=1e-1)
+        main(model, path="Cifar100/LinearAutoEncoder" + str(i) + "/", name=name,
+             optimizer=optim)
+
+        flag = True
+        name = 'SCRN_l_{0}_rho_{1}'.format(0.1, 0.5)
+        model = LinearAutoEncoder(input_shape=input_shape)
+        optim = SCRN(model.parameters(), l_=0.1, rho=0.5)
+        main(model, path="Cifar100/LinearAutoEncoder" + str(i) + "/", name=name,
+             optimizer=optim)
+
+        name = 'HVP_RVR_SGD_lr_{0}_b_{1}_sigma2_{2}_l2_{3}'.format(0.1, 0.3, 0.1, 1)
+        model = LinearAutoEncoder(input_shape=input_shape)
+        optim = HVP_RVR(model.parameters(), lr=0.1, b=0.3, sigma2=0.1, l2=1)
+        main(model, path="Cifar100/LinearAutoEncoder" + str(i) + "/", name=name,
+             optimizer=optim)
+
+    data_set = 'cifar-10'
+
+    for i in range(2):
+        flag = False
+        name = 'SGD_lr_{0}_momentum_{1}'.format(0.1, 0)
+        model = LinearAutoEncoder(input_shape=input_shape)
+        optim = SGD(model.parameters(), lr=0.1, momentum=0)
+        main(model, path="Cifar10/LinearAutoEncoder" + str(i) + "/", name=name,
+             optimizer=optim)
+
+        name = 'SGD_lr_{0}_momentum_{1}'.format(0.1, 0.9)
+        model = LinearAutoEncoder(input_shape=input_shape)
+        optim = SGD(model.parameters(), lr=0.1, momentum=0.9)
+        main(model, path="Cifar10/LinearAutoEncoder" + str(i) + "/", name=name,
+             optimizer=optim)
+
+        name = 'Adam_lr_{0}'.format(1e-3)
+        model = LinearAutoEncoder(input_shape=input_shape)
+        optim = Adam(model.parameters(), lr=1e-3)
+        main(model, path="Cifar10/LinearAutoEncoder" + str(i) + "/", name=name,
+             optimizer=optim)
+
+        name = 'Storm_lr_{0}'.format(1e-1)
+        model = LinearAutoEncoder(input_shape=input_shape)
+        optim = StormOptimizer(model.parameters(), lr=1e-1)
+        main(model, path="Cifar10/LinearAutoEncoder" + str(i) + "/", name=name,
+             optimizer=optim)
+
+        flag = True
+        name = 'SCRN_l_{0}_rho_{1}'.format(0.1, 0.5)
+        model = LinearAutoEncoder(input_shape=input_shape)
+        optim = SCRN(model.parameters(), l_=0.1, rho=0.5)
+        main(model, path="Cifar10/LinearAutoEncoder" + str(i) + "/", name=name,
+             optimizer=optim)
+
+        name = 'HVP_RVR_SGD_lr_{0}_b_{1}_sigma2_{2}_l2_{3}'.format(0.1, 0.3, 0.1, 0.1)
+        model = LinearAutoEncoder(input_shape=input_shape)
+        optim = HVP_RVR(model.parameters(), lr=0.1, b=0.3, sigma2=0.1, l2=0.1)
+        main(model, path="Cifar10/LinearAutoEncoder" + str(i) + "/", name=name,
+             optimizer=optim)"""
+
+    data_set = 'mnist'
+    input_shape = [1, 28, 28]
+    Num_epochs = 100
 
     flag = True
-    for l in [0.1, 1, 10]:
-        for rho in [5, 10]:
-            name = 'SCRN_l_{0}_rho_{1}'.format(l, rho * l)
-            model = LinearAutoEncoder(input_shape=input_shape)
-            optim = SCRN(model.parameters(), l_=l, rho=rho * l)
-            main(model, path="GridSearchLogs/LinearAutoEncoder/", name=name,
-                 optimizer=optim)
-
-
-
-    for lr in [1e-1, 1e-2]:
-        for sigma2 in [0.1, 1, 10]:
-            for l2 in [0.1, 1, 10]:
-                name = 'HVP_RVR_SGD_lr_{0}_b_{1}_sigma2_{2}_l2_{3}'.format(lr, 0.3, sigma2, l2)
-                model = LinearAutoEncoder(input_shape=input_shape)
-                optim = HVP_RVR(model.parameters(), lr=lr, b=0.3, sigma2=sigma2, l2=l2)
-                main(model, path="GridSearchLogs/LinearAutoEncoder/", name=name,
-                     optimizer=optim)"""
-
-    name = 'SGD_lr_{0}_momentum_{1}'.format(0.1, 0)
+    name = 'SCRN_l_{0}_rho_{1}'.format(0.01, 0.05)
     model = LinearAutoEncoder(input_shape=input_shape)
-    optim = SGD(model.parameters(), lr=0.1, momentum=0)
-    main(model, path="Cifar100/LinearAutoEncoder/", name=name,
+    optim = SCRN(model.parameters(), l_=0.01, rho=0.05)
+    main(model, path="MNIST/LinearAutoEncoder" + str(0) + "/", name=name,
+         optimizer=optim)
+    name = 'SCRN_l_{0}_rho_{1}'.format(0.01, 0.05)
+    model = LinearAutoEncoder(input_shape=input_shape)
+    optim = SCRN(model.parameters(), l_=0.01, rho=0.05)
+    main(model, path="MNIST/LinearAutoEncoder" + str(1) + "/", name=name,
          optimizer=optim)
 
-    name = 'SGD_lr_{0}_momentum_{1}'.format(0.1, 0.9)
+    name = 'SCRN_l_{0}_rho_{1}'.format(0.01, 0.05)
     model = LinearAutoEncoder(input_shape=input_shape)
-    optim = SGD(model.parameters(), lr=0.1, momentum=0.9)
-    main(model, path="Cifar100/LinearAutoEncoder/", name=name,
+    optim = SCRN(model.parameters(), l_=0.01, rho=0.05)
+    main(model, path="MNIST/LinearAutoEncoder" + str(2) + "/", name=name,
          optimizer=optim)
 
-    name = 'Adam_lr_{0}'.format(1e-3)
-    model = LinearAutoEncoder(input_shape=input_shape)
-    optim = Adam(model.parameters(), lr=1e-3)
-    main(model, path="Cifar100/LinearAutoEncoder/", name=name,
-         optimizer=optim)
+    """for i in range(2):
+        flag = False
+        name = 'SGD_lr_{0}_momentum_{1}'.format(0.1, 0)
+        model = LinearAutoEncoder(input_shape=input_shape)
+        optim = SGD(model.parameters(), lr=0.1, momentum=0)
+        main(model, path="MNIST/LinearAutoEncoder" + str(i) + "/", name=name,
+             optimizer=optim)
 
-    name = 'Storm_lr_{0}'.format(1e-1)
-    model = LinearAutoEncoder(input_shape=input_shape)
-    optim = StormOptimizer(model.parameters(), lr=1e-1)
-    main(model, path="Cifar100/LinearAutoEncoder/", name=name,
-         optimizer=optim)
+        name = 'SGD_lr_{0}_momentum_{1}'.format(0.1, 0.9)
+        model = LinearAutoEncoder(input_shape=input_shape)
+        optim = SGD(model.parameters(), lr=0.1, momentum=0.9)
+        main(model, path="MNIST/LinearAutoEncoder" + str(i) + "/", name=name,
+             optimizer=optim)
 
-    flag = True
-    name = 'SCRN_l_{0}_rho_{1}'.format(0.1, 0.5)
-    model = LinearAutoEncoder(input_shape=input_shape)
-    optim = SCRN(model.parameters(), l_=0.1, rho=0.5)
-    main(model, path="Cifar100/LinearAutoEncoder/", name=name,
-         optimizer=optim)
+        name = 'Adam_lr_{0}'.format(1e-3)
+        model = LinearAutoEncoder(input_shape=input_shape)
+        optim = Adam(model.parameters(), lr=1e-3)
+        main(model, path="MNIST/LinearAutoEncoder" + str(i) + "/", name=name,
+             optimizer=optim)
 
-    name = 'HVP_RVR_SGD_lr_{0}_b_{1}_sigma2_{2}_l2_{3}'.format(0.1, 0.3, 0.1, 1)
-    model = LinearAutoEncoder(input_shape=input_shape)
-    optim = HVP_RVR(model.parameters(), lr=0.1, b=0.3, sigma2=0.1, l2=1)
-    main(model, path="Cifar100/LinearAutoEncoder/", name=name,
-         optimizer=optim)
+        name = 'Storm_lr_{0}'.format(1e-1)
+        model = LinearAutoEncoder(input_shape=input_shape)
+        optim = StormOptimizer(model.parameters(), lr=1e-1)
+        main(model, path="MNIST/LinearAutoEncoder" + str(i) + "/", name=name,
+             optimizer=optim)
 
+        flag = True
+        name = 'SCRN_l_{0}_rho_{1}'.format(0.1, 1)
+        model = LinearAutoEncoder(input_shape=input_shape)
+        optim = SCRN(model.parameters(), l_=0.1, rho=0.5)
+        main(model, path="MNIST/LinearAutoEncoder" + str(i) + "/", name=name,
+             optimizer=optim)
+
+        name = 'HVP_RVR_SGD_lr_{0}_b_{1}_sigma2_{2}_l2_{3}'.format(0.1, 0.3, 0.1, 0.1)
+        model = LinearAutoEncoder(input_shape=input_shape)
+        optim = HVP_RVR(model.parameters(), lr=0.1, b=0.3, sigma2=0.1, l2=0.1)
+        main(model, path="MNIST/LinearAutoEncoder" + str(i) + "/", name=name,
+             optimizer=optim)"""

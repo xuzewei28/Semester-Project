@@ -12,7 +12,7 @@ from dataset import *
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 Learning_rate = 1e-1
 Batch_size = 500  # 4
-Num_epochs = 40
+Num_epochs = 300
 Num_workers = 0
 Pin_memory = True
 one_hot = True
@@ -22,9 +22,10 @@ torch.manual_seed(0)
 torch.cuda.manual_seed(0)
 flag = False
 flag_svrc = False
-input_shape=[3,32,32]
-data_set='cifar-100'
-n_class=100
+input_shape = [3, 32, 32]
+data_set = 'cifar-10'
+n_class = 10
+
 
 class Regularization(nn.Module):
     def __init__(self, order=2, criterion=nn.MSELoss(), param=None, alpha=1e-5):
@@ -115,7 +116,7 @@ def main(model, path, name, optimizer, criterion=nn.CrossEntropyLoss()):
     print(name)
     model.to(device)
 
-    dataset = CifarDataset(one_hot=one_hot,data=data_set)
+    dataset = CifarDataset(one_hot=one_hot, data=data_set)
     train_loader = DataLoader(
         dataset,
         batch_size=Batch_size,
@@ -124,7 +125,7 @@ def main(model, path, name, optimizer, criterion=nn.CrossEntropyLoss()):
         num_workers=Num_workers
     )
 
-    dataset = CifarDataset(train=False, one_hot=one_hot,data=data_set)
+    dataset = CifarDataset(train=False, one_hot=one_hot, data=data_set)
     test_loader = DataLoader(
         dataset,
         batch_size=Batch_size,
@@ -148,118 +149,214 @@ def main(model, path, name, optimizer, criterion=nn.CrossEntropyLoss()):
 
 
 if __name__ == '__main__':
-    """for lr in [1e-1, 3e-2, 1e-2]:
-        for momentum in [0, 0.9]:
-            name = 'SGD_lr_{0}_momentum_{1}'.format(lr, momentum)
-            model = OneLayerLinearNet(input_shape=input_shape)
-            optim = SGD(model.parameters(), lr=lr, momentum=momentum)
-            main(model, path="GridSearchLogs/OneLayerLinearNet/", name=name,
-                 optimizer=optim)
+    """flag=True
+    name = 'HVP_RVR_SGD_lr_{0}_b_{1}_sigma2_{2}_l2_{3}'.format(0.1, 0.3, 1, 10)
+    model = ResNet(input_shape=input_shape, n_class=n_class)
+    optim = HVP_RVR(model.parameters(), lr=0.1, b=0.3, sigma2=1, l2=10)
+    main(model, path="Cifar10/ResNet" + str(1) + "/", name=name,
+         optimizer=optim)"""
 
-            model = ResNet(input_shape=input_shape)
-            optim = SGD(model.parameters(), lr=lr, momentum=momentum)
-            main(model, path="GridSearchLogs/ResNet/", name=name,
-                 optimizer=optim)"""
+    """for i in range(1,2):
+        flag = False
+        name = 'SGD_lr_{0}_momentum_{1}'.format(0.01, 0)
+        model = OneLayerLinearNet(input_shape=input_shape, n_class=n_class)
+        optim = SGD(model.parameters(), lr=0.01, momentum=0)
+        main(model, path="Cifar10/OneLayerLinearNet" + str(i) + "/", name=name,
+             optimizer=optim)
 
-    """flag = True
-    for l in [0.01, 20]:
-        for rho in [5, 10]:
-            name = 'SCRN_l_{0}_rho_{1}'.format(l, rho * l)
-            model = OneLayerLinearNet(input_shape=input_shape,n_class=n_class)
-            optim = SCRN(model.parameters(), l_=l, rho=rho * l)
-            main(model, path="GridSearchLogs/OneLayerLinearNet/", name=name,
-                 optimizer=optim)
+        name = 'SGD_lr_{0}_momentum_{1}'.format(0.003, 0.9)
+        model = OneLayerLinearNet(input_shape=input_shape, n_class=n_class)
+        optim = SGD(model.parameters(), lr=0.003, momentum=0.9)
+        main(model, path="Cifar10/OneLayerLinearNet" + str(i) + "/", name=name,
+             optimizer=optim)
 
-            model = ResNet(input_shape=input_shape,n_class=n_class)
-            optim = SCRN(model.parameters(), l_=l, rho=rho * l)
-            main(model, path="GridSearchLogs/ResNet/", name=name,
-                 optimizer=optim)"""
-    flag=True
-    for lr in [1e-1]:
-        for sigma2 in [0.1, 1, 10]:
-            for l2 in [0.1, 1, 10]:
-                name = 'HVP_RVR_SGD_lr_{0}_b_{1}_sigma2_{2}_l2_{3}'.format(lr, 0.1, sigma2, l2)
-                model = OneLayerLinearNet(input_shape=input_shape,n_class=n_class)
-                optim = HVP_RVR(model.parameters(), lr=lr, b=0.1, sigma2=sigma2, l2=l2)
-                main(model, path="GridSearchLogs/OneLayerLinearNet/", name=name,
-                     optimizer=optim)
+        name = 'Adam_lr_{0}'.format(1e-3)
+        model = OneLayerLinearNet(input_shape=input_shape, n_class=n_class)
+        optim = Adam(model.parameters(), lr=1e-3)
+        main(model, path="Cifar10/OneLayerLinearNet" + str(i) + "/", name=name,
+             optimizer=optim)
 
-                model = ResNet(input_shape=input_shape,n_class=n_class)
-                optim = HVP_RVR(model.parameters(), lr=lr, b=0.1, sigma2=sigma2, l2=l2)
-                main(model, path="GridSearchLogs/ResNet/", name=name,
-                     optimizer=optim)
+        name = 'Storm_lr_{0}'.format(1e-1)
+        model = OneLayerLinearNet(input_shape=input_shape, n_class=n_class)
+        optim = StormOptimizer(model.parameters(), lr=1e-1)
+        main(model, path="Cifar10/OneLayerLinearNet" + str(i) + "/", name=name,
+             optimizer=optim)
 
-    """name = 'SGD_lr_{0}_momentum_{1}'.format(0.1, 0)
-    model = OneLayerLinearNet(input_shape=input_shape,n_class=n_class)
-    optim = SGD(model.parameters(), lr=0.1, momentum=0)
-    main(model, path="Cifar100/OneLayerLinearNet/", name=name,
-         optimizer=optim)
+        flag = True
+        name = 'SCRN_l_{0}_rho_{1}'.format(1, 10)
+        model = OneLayerLinearNet(input_shape=input_shape, n_class=n_class)
+        optim = SCRN(model.parameters(), l_=1, rho=10)
+        main(model, path="Cifar10/OneLayerLinearNet" + str(i) + "/", name=name,
+             optimizer=optim)
 
-    name = 'SGD_lr_{0}_momentum_{1}'.format(0.03, 0.9)
-    model = OneLayerLinearNet(input_shape=input_shape,n_class=n_class)
-    optim = SGD(model.parameters(), lr=0.03, momentum=0.9)
-    main(model, path="Cifar100/OneLayerLinearNet/", name=name,
-         optimizer=optim)
+        name = 'HVP_RVR_SGD_lr_{0}_b_{1}_sigma2_{2}_l2_{3}'.format(0.01, 0.3, 1, 0.1)
+        model = OneLayerLinearNet(input_shape=input_shape, n_class=n_class)
+        optim = HVP_RVR(model.parameters(), lr=0.01, b=0.3, sigma2=1, l2=0.1)
+        main(model, path="Cifar10/OneLayerLinearNet" + str(i) + "/", name=name,
+             optimizer=optim)
 
-    name = 'Adam_lr_{0}'.format(1e-3)
-    model = OneLayerLinearNet(input_shape=input_shape,n_class=n_class)
-    optim = Adam(model.parameters(), lr=1e-3)
-    main(model, path="Cifar100/OneLayerLinearNet/", name=name,
-         optimizer=optim)
+        flag = False
+        name = 'SGD_lr_{0}_momentum_{1}'.format(0.1, 0)
+        model = ResNet(input_shape=input_shape, n_class=n_class)
+        optim = SGD(model.parameters(), lr=0.1, momentum=0)
+        main(model, path="Cifar10/ResNet" + str(i) + "/", name=name,
+             optimizer=optim)
 
-    name = 'Storm_lr_{0}'.format(1e-1)
-    model = OneLayerLinearNet(input_shape=input_shape,n_class=n_class)
-    optim = StormOptimizer(model.parameters(), lr=1e-1)
-    main(model, path="Cifar100/OneLayerLinearNet/", name=name,
-         optimizer=optim)
+        name = 'SGD_lr_{0}_momentum_{1}'.format(0.03, 0.9)
+        model = ResNet(input_shape=input_shape, n_class=n_class)
+        optim = SGD(model.parameters(), lr=0.03, momentum=0.9)
+        main(model, path="Cifar10/ResNet" + str(i) + "/", name=name,
+             optimizer=optim)
 
-    flag = True
-    name = 'SCRN_l_{0}_rho_{1}'.format(1, 5)
-    model = OneLayerLinearNet(input_shape=input_shape,n_class=n_class)
-    optim = SCRN(model.parameters(), l_=1, rho=5)
-    main(model, path="Cifar100/OneLayerLinearNet/", name=name,
-         optimizer=optim)
+        name = 'Adam_lr_{0}'.format(1e-3)
+        model = ResNet(input_shape=input_shape, n_class=n_class)
+        optim = Adam(model.parameters(), lr=1e-3)
+        main(model, path="Cifar10/ResNet" + str(i) + "/", name=name,
+             optimizer=optim)
 
-    name = 'HVP_RVR_SGD_lr_{0}_b_{1}_sigma2_{2}_l2_{3}'.format(0.1, 0.3, 0.1, 0.1)
-    model = OneLayerLinearNet(input_shape=input_shape)
-    optim = HVP_RVR(model.parameters(), lr=0.1, b=0.3, sigma2=0.1, l2=0.1)
-    main(model, path="Cifar100/OneLayerLinearNet/", name=name,
-         optimizer=optim)
-    
+        name = 'Storm_lr_{0}'.format(1e-1)
+        model = ResNet(input_shape=input_shape, n_class=n_class)
+        optim = StormOptimizer(model.parameters(), lr=1e-1)
+        main(model, path="Cifar10/ResNet" + str(i) + "/", name=name,
+             optimizer=optim)
+
+        flag = True
+        name = 'SCRN_l_{0}_rho_{1}'.format(0.1, 0.5)
+        model = ResNet(input_shape=input_shape, n_class=n_class)
+        optim = SCRN(model.parameters(), l_=0.1, rho=0.5)
+        main(model, path="Cifar10/ResNet" + str(i) + "/", name=name,
+             optimizer=optim)
+
+        name = 'HVP_RVR_SGD_lr_{0}_b_{1}_sigma2_{2}_l2_{3}'.format(0.1, 0.3, 1, 10)
+        model = ResNet(input_shape=input_shape, n_class=n_class)
+        optim = HVP_RVR(model.parameters(), lr=0.1, b=0.3, sigma2=1, l2=10)
+        main(model, path="Cifar10/ResNet" + str(i) + "/", name=name,
+             optimizer=optim)"""
+
+    input_shape = [1, 28, 28]
+    data_set = 'mnist'
+    Num_epochs = 100
+
+    i = 0
+
     flag = False
-    name = 'SGD_lr_{0}_momentum_{1}'.format(0.1, 0)
-    model = ResNet(input_shape=input_shape,n_class=n_class)
+    name = 'SGD_lr_{0}_momentum_{1}'.format(0.03, 0)
+    model = ResNet(input_shape=input_shape, n_class=n_class)
     optim = SGD(model.parameters(), lr=0.1, momentum=0)
-    main(model, path="Cifar100/ResNet/", name=name,
+    main(model, path="MNIST/ResNet" + str(i) + "/", name=name,
          optimizer=optim)
 
-    name = 'SGD_lr_{0}_momentum_{1}'.format(0.03, 0.9)
-    model = ResNet(input_shape=input_shape,n_class=n_class)
+    name = 'SGD_lr_{0}_momentum_{1}'.format(0.01, 0.9)
+    model = ResNet(input_shape=input_shape, n_class=n_class)
     optim = SGD(model.parameters(), lr=0.03, momentum=0.9)
-    main(model, path="Cifar100/ResNet/", name=name,
+    main(model, path="MNIST/ResNet" + str(i) + "/", name=name,
          optimizer=optim)
 
     name = 'Adam_lr_{0}'.format(1e-3)
-    model = ResNet(input_shape=input_shape,n_class=n_class)
+    model = ResNet(input_shape=input_shape, n_class=n_class)
     optim = Adam(model.parameters(), lr=1e-3)
-    main(model, path="Cifar100/ResNet/", name=name,
+    main(model, path="MNIST/ResNet" + str(i) + "/", name=name,
          optimizer=optim)
 
     name = 'Storm_lr_{0}'.format(1e-1)
-    model = ResNet(input_shape=input_shape,n_class=n_class)
+    model = ResNet(input_shape=input_shape, n_class=n_class)
     optim = StormOptimizer(model.parameters(), lr=1e-1)
-    main(model, path="Cifar100/ResNet/", name=name,
+    main(model, path="MNIST/ResNet" + str(i) + "/", name=name,
          optimizer=optim)
 
     flag = True
-    name = 'SCRN_l_{0}_rho_{1}'.format(1, 5)
-    model = ResNet(input_shape=input_shape,n_class=n_class)
-    optim = SCRN(model.parameters(), l_=1, rho=5)
-    main(model, path="Cifar100/ResNet/", name=name,
-         optimizer=optim)"""
+    name = 'SCRN_l_{0}_rho_{1}'.format(0.1, 1)
+    model = ResNet(input_shape=input_shape, n_class=n_class)
+    optim = SCRN(model.parameters(), l_=0.1, rho=1)
+    main(model, path="MNIST/ResNet" + str(i) + "/", name=name,
+         optimizer=optim)
 
-    """name = 'HVP_RVR_SGD_lr_{0}_b_{1}_sigma2_{2}_l2_{3}'.format(0.01, 0.3, 0.1, 1)
-    model = ResNet(input_shape=input_shape)
+    name = 'HVP_RVR_SGD_lr_{0}_b_{1}_sigma2_{2}_l2_{3}'.format(0.01, 0.3, 0.1, 1)
+    model = ResNet(input_shape=input_shape, n_class=n_class)
     optim = HVP_RVR(model.parameters(), lr=0.01, b=0.3, sigma2=0.1, l2=1)
-    main(model, path="Cifar100/ResNet/", name=name,
-         optimizer=optim)"""
+    main(model, path="MNIST/ResNet" + str(i) + "/", name=name,
+         optimizer=optim)
+
+    for i in range(1, 2):
+        flag = False
+        name = 'SGD_lr_{0}_momentum_{1}'.format(0.1, 0)
+        model = OneLayerLinearNet(input_shape=input_shape, n_class=n_class)
+        optim = SGD(model.parameters(), lr=0.1, momentum=0)
+        main(model, path="MNIST/OneLayerLinearNet" + str(i) + "/", name=name,
+             optimizer=optim)
+
+        name = 'SGD_lr_{0}_momentum_{1}'.format(0.1, 0.9)
+        model = OneLayerLinearNet(input_shape=input_shape, n_class=n_class)
+        optim = SGD(model.parameters(), lr=0.1, momentum=0.9)
+        main(model, path="MNIST/OneLayerLinearNet" + str(i) + "/", name=name,
+             optimizer=optim)
+
+        name = 'Adam_lr_{0}'.format(1e-3)
+        model = OneLayerLinearNet(input_shape=input_shape, n_class=n_class)
+        optim = Adam(model.parameters(), lr=1e-3)
+        main(model, path="MNIST/OneLayerLinearNet" + str(i) + "/", name=name,
+             optimizer=optim)
+
+        name = 'Storm_lr_{0}'.format(1e-1)
+        model = OneLayerLinearNet(input_shape=input_shape, n_class=n_class)
+        optim = StormOptimizer(model.parameters(), lr=1e-1)
+        main(model, path="MNIST/OneLayerLinearNet" + str(i) + "/", name=name,
+             optimizer=optim)
+
+        flag = True
+        name = 'SCRN_l_{0}_rho_{1}'.format(0.1, 0.5)
+        model = OneLayerLinearNet(input_shape=input_shape, n_class=n_class)
+        optim = SCRN(model.parameters(), l_=0.1, rho=0.5)
+        main(model, path="MNIST/OneLayerLinearNet" + str(i) + "/", name=name,
+             optimizer=optim)
+
+        name = 'HVP_RVR_SGD_lr_{0}_b_{1}_sigma2_{2}_l2_{3}'.format(0.1, 0.3, 0.1, 0.1)
+        model = OneLayerLinearNet(input_shape=input_shape, n_class=n_class)
+        optim = HVP_RVR(model.parameters(), lr=0.1, b=0.3, sigma2=0.1, l2=0.1)
+        main(model, path="MNIST/OneLayerLinearNet" + str(i) + "/", name=name,
+             optimizer=optim)
+
+        flag = False
+        name = 'SGD_lr_{0}_momentum_{1}'.format(0.03, 0)
+        model = ResNet(input_shape=input_shape, n_class=n_class)
+        optim = SGD(model.parameters(), lr=0.1, momentum=0)
+        main(model, path="MNIST/ResNet" + str(i) + "/", name=name,
+             optimizer=optim)
+
+        name = 'SGD_lr_{0}_momentum_{1}'.format(0.01, 0.9)
+        model = ResNet(input_shape=input_shape, n_class=n_class)
+        optim = SGD(model.parameters(), lr=0.03, momentum=0.9)
+        main(model, path="MNIST/ResNet" + str(i) + "/", name=name,
+             optimizer=optim)
+
+        name = 'Adam_lr_{0}'.format(1e-3)
+        model = ResNet(input_shape=input_shape, n_class=n_class)
+        optim = Adam(model.parameters(), lr=1e-3)
+        main(model, path="MNIST/ResNet" + str(i) + "/", name=name,
+             optimizer=optim)
+
+        name = 'Storm_lr_{0}'.format(1e-1)
+        model = ResNet(input_shape=input_shape, n_class=n_class)
+        optim = StormOptimizer(model.parameters(), lr=1e-1)
+        main(model, path="MNIST/ResNet" + str(i) + "/", name=name,
+             optimizer=optim)
+
+        flag = True
+        name = 'SCRN_l_{0}_rho_{1}'.format(0.1, 1)
+        model = ResNet(input_shape=input_shape, n_class=n_class)
+        optim = SCRN(model.parameters(), l_=0.1, rho=1)
+        main(model, path="MNIST/ResNet" + str(i) + "/", name=name,
+             optimizer=optim)
+
+        name = 'HVP_RVR_SGD_lr_{0}_b_{1}_sigma2_{2}_l2_{3}'.format(0.01, 0.3, 0.1, 1)
+        model = ResNet(input_shape=input_shape, n_class=n_class)
+        optim = HVP_RVR(model.parameters(), lr=0.01, b=0.3, sigma2=0.1, l2=1)
+        main(model, path="MNIST/ResNet" + str(i) + "/", name=name,
+             optimizer=optim)
+
+    flag = True
+    name = 'SCRN_l_{0}_rho_{1}'.format(0.1, 1)
+    model = ResNet(input_shape=input_shape, n_class=n_class)
+    optim = SCRN(model.parameters(), l_=0.1, rho=1)
+    main(model, path="MNIST/ResNet" + str(2) + "/", name=name,
+         optimizer=optim)
