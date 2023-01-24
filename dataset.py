@@ -62,8 +62,8 @@ class CifarDataset(Dataset):
         return train_input, train_target, test_input, test_target
 
     def load_cifar_100_data(self):
-        train_set = datasets.CIFAR100('./data/cifar100/', train=True)
-        test_set = datasets.CIFAR100('./data/cifar100/', train=False)
+        train_set = datasets.CIFAR100('./data/cifar100/', train=True, download=True)
+        test_set = datasets.CIFAR100('./data/cifar100/', train=False, download=True)
 
         train_input = train_set.data
         train_target = train_set.targets
