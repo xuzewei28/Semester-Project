@@ -12,13 +12,14 @@ from dataset import *
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 Learning_rate = 1e-1
 Batch_size = 500  # 4
-Num_epochs = 50
+Num_epochs = 300
 Pin_memory = True
 
-torch.manual_seed(0)
-torch.cuda.manual_seed(0)
+torch.manual_seed(1)
+torch.cuda.manual_seed(1)
 flag = False
-
+data_set='cifar-100'
+input_shape = [3, 32, 32]
 
 def accuracy(loader, model, criterion, optimizer, device, name=''):
     """Compute the accuracy rate on the given dataset with the input model"""
@@ -85,7 +86,7 @@ def main(model, optimizer, criterion=nn.MSELoss(), name="AutoEncoder", path='Aut
     print(name)
     model.to(device)
 
-    dataset = CifarDataset(type="auto_encoder")
+    dataset = CifarDataset(type="auto_encoder", data=data_set)
     train_loader = DataLoader(
         dataset,
         batch_size=Batch_size,
@@ -94,7 +95,7 @@ def main(model, optimizer, criterion=nn.MSELoss(), name="AutoEncoder", path='Aut
         num_workers=0
     )
 
-    dataset = CifarDataset(train=False, type="auto_encoder")
+    dataset = CifarDataset(train=False, type="auto_encoder", data=data_set)
     test_loader = DataLoader(
         dataset,
         batch_size=Batch_size,
@@ -110,8 +111,8 @@ def main(model, optimizer, criterion=nn.MSELoss(), name="AutoEncoder", path='Aut
         f.write(str(l) + '\n')
     f.close()
 
-    os.makedirs("grad/" + path, exist_ok=True)
-    f = open("grad/" + path + name, 'w')
+    os.makedirs("other_logs/grad/" + path, exist_ok=True)
+    f = open("other_logs/grad/" + path + name, 'w')
     for l in grad_logs:
         f.write(str(l) + '\n')
     f.close()
@@ -119,42 +120,82 @@ def main(model, optimizer, criterion=nn.MSELoss(), name="AutoEncoder", path='Aut
 
 
 if __name__ == '__main__':
+
+    data_set = 'mnist'
+    input_shape = [1, 28, 28]
+    Num_epochs = 100
+    for i in range(2):
+        flag = True
+        name = 'SCRN_l_{0}_rho_{1}'.format(0.01, 0.05)
+        model = LinearAutoEncoder(input_shape=input_shape)
+        optim = SCRN(model.parameters(), l_=0.01, rho=0.05)
+        main(model, path="logs/Cifar10/AutoEncoder/", name=name,
+             optimizer=optim)
+
+    data_set = 'cifar-10'
+    input_shape = [3, 32, 32]
+    for i in range(2):
+        flag = True
+        name = 'SCRN_l_{0}_rho_{1}'.format(0.1,0.5)
+        model = LinearAutoEncoder(input_shape=input_shape)
+        optim = SCRN(model.parameters(), l_=0.1,rho=0.5)
+        main(model, path="logs/Cifar10/AutoEncoder/", name=name,
+             optimizer=optim)
+
+    data_set = 'cifar-100'
+    input_shape = [3, 32, 32]
+    for i in range(2):
+        flag = True
+        name = 'SCRN_l_{0}_rho_{1}'.format(0.1, 0.5)
+        model = LinearAutoEncoder(input_shape=input_shape)
+        optim = SCRN(model.parameters(), l_=0.1,rho=0.5)
+        main(model, path="logs/Cifar10/AutoEncoder/", name=name,
+             optimizer=optim)
+
+
+
+
+
+
+
+
     """name = 'SGD_lR_{0}'.format(1e-1)
-    model = LinearAutoEncoder()
+    model = LinearAutoEncoder(input_shape=input_shape)
     optim = SGD(model.parameters(), lr=1e-1)
-    main(model, path="Final_logs/AutoEncoder/", name=name,
+    main(model, path="Prova/AutoEncoder/", name=name,
          optimizer=optim)
 
     name = 'SGD_lR_{0}_Momentum_{1}'.format(1e-1, 0.9)
-    model = LinearAutoEncoder()
+    model = LinearAutoEncoder(input_shape=input_shape)
     optim = SGD(model.parameters(), lr=1e-1, momentum=0.9)
-    main(model, path="Final_logs/AutoEncoder/", name=name,
+    main(model, path="Prova/AutoEncoder/", name=name,
          optimizer=optim)
 
     name = 'ADAM_lR_{0}'.format(1e-3)
-    model = LinearAutoEncoder()
+    model = LinearAutoEncoder(input_shape=input_shape)
     optim = Adam(model.parameters(), lr=1e-3)
-    main(model, path="Final_logs/AutoEncoder/", name=name,
+    main(model, path="Prova/AutoEncoder/", name=name,
+         optimizer=optim)
+
+    name = 'STORM_lR_{0}'.format(1e-1)
+    model = LinearAutoEncoder(input_shape=input_shape)
+    optim = StormOptimizer(model.parameters(), lr=1e-1)
+    main(model, path="Prova/AutoEncoder/", name=name,
          optimizer=optim)
 
     flag = True
     name = 'SCRN_l_{0}_RHO_{1}'.format(1e-1, 0.5)
-    model = LinearAutoEncoder()
+    model = LinearAutoEncoder(input_shape=input_shape)
     optim = SCRN(model.parameters(), l_=0.1, rho=0.5)
-    main(model, path="Final_logs/AutoEncoder/", name=name,
+    main(model, path="Prova/AutoEncoder/", name=name,
          optimizer=optim)
 
-    name = 'HVP_RVR_SGD_lr_{0}_b_{1}_sigma2_{2}_l2_{3}'.format(1e-2, 0.3, 0.1, 0.1)
-    model = LinearAutoEncoder()
-    optim = HVP_RVR(model.parameters(), lr=0.01, b=0.3, sigma2=0.1, l2=0.1)
-    main(model, path="Final_logs/AutoEncoder/", name=name,
-         optimizer=optim)
-
-    name = 'HVP_RVR_SGD_lr_{0}_b_{1}_sigma2_{2}_l2_{3}'.format(1e-1, 0.3, 0.1, 0.1)
-    model = LinearAutoEncoder()
-    optim = HVP_RVR(model.parameters(), lr=0.1, b=0.3, sigma2=0.1, l2=0.1)
-    main(model, path="Final_logs/AutoEncoder/", name=name,
+    name = 'HVP_RVR_SGD_lr_{0}_b_{1}_sigma2_{2}_l2_{3}'.format(1e-1, 0.3, 0.1, 1)
+    model = LinearAutoEncoder(input_shape=input_shape)
+    optim = HVP_RVR(model.parameters(), lr=0.1, b=0.3, sigma2=0.1, l2=1)
+    main(model, path="Prova/AutoEncoder/", name=name,
          optimizer=optim)"""
+
 
     """name = 'Adaptive_SGD_lR_{0}_t'.format(1e-1)
     model = LinearAutoEncoder()
@@ -182,8 +223,8 @@ if __name__ == '__main__':
     main(model, path="Final_logs/AutoEncoder/", name=name,
          optimizer=optim)"""
 
-    flag = True
-    """for bs in [500]:
+    """flag = True
+    for bs in [500]:
         for b in [0.3, 0.1]:
             for sigma2 in [0.1, 1, 10]:
                 for l1 in [0.1, 1, 10]:
@@ -198,10 +239,10 @@ if __name__ == '__main__':
                             main(model, path="Prova/AutoEncoder/", name=name,
                                  optimizer=optim)
                         except:
-                            print("error")"""
+                            print("error")
 
     model = LinearAutoEncoder()
     optim = HVP_RVR(model.parameters(), b=0.3, sigma2=1, l1=1, l2=5,
                     mode='SCRN')
     main(model, path="Prova/AutoEncoder/", name='',
-         optimizer=optim)
+         optimizer=optim)"""

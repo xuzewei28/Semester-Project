@@ -7,6 +7,41 @@ from model import *
 import numpy as np
 
 
+class Sharp(Optimizer):
+    def __init__(self, params, alpha, eta, T=100):
+        super(Sharp, self).__init__(params, dict())
+        self.f = None
+        self.alpha = alpha
+        self.eta = eta
+        self.count = 0
+        self.T = T
+        self.v = None
+        self.x_prev = None
+
+    def set_f(self, f):
+        self.f = f
+
+    def step(self, **kwargs):
+        alpha = self.alpha / (self.count // self.T + 1) ** (2 / 3)
+        eta = self.eta / (self.count // self.T + 1) ** (2 / 3)
+
+        if self.v is None:
+            self.v = [p.grad for name in self.param_groups for p in name["params"]]
+        else:
+            b = torch.rand(1).cuda()
+            x = [p for name in self.param_groups for p in name["params"]]
+            a = [b * x1 + (1 - b) * x2 for x1, x2 in zip(x, self.x_prev)]
+            h = hvp(self.f, tuple(a), tuple((x1 - x2) for x1, x2 in zip(x, self.x_prev)))[1]
+            g = [p.grad for name in self.param_groups for p in name["params"]]
+            self.v = [(1 - alpha) * (v1 + h1) + alpha * g1 for v1, h1, g1 in zip(self.v, h, g)]
+
+        self.x_prev = [p.clone() for name in self.param_groups for p in name["params"]]
+        for group in self.param_groups:
+            for p,v in zip(group["params"],self.v):
+                p.data -= eta*v/torch.norm(v)
+        self.count += 1
+
+
 class Adaptive_SGD(Optimizer):
     def __init__(self, params, lr=1e-1, f=lambda x: x, T=100):
         super(Adaptive_SGD, self).__init__(params, dict())
@@ -24,7 +59,8 @@ class Adaptive_SGD(Optimizer):
 
 
 class HVP_RVR(Optimizer):
-    def __init__(self, params, b=0.1, sigma1=1, sigma2=1, l1=1, l2=1, eps=1e-2, lr=1e-1, mode='SGD'
+    def __init__(self, params, b=0.1,
+                 sigma1=1, sigma2=1, l1=1, l2=1, eps=1e-2, lr=1e-1, mode='SGD'
                  , adaptive=False, T=100, func=lambda x: x):
         super(HVP_RVR, self).__init__(params, dict())
         self.f = None
@@ -47,7 +83,7 @@ class HVP_RVR(Optimizer):
         self.T = T
         self.count = 0
         self.device = 'cuda'
-        self.deltas=None
+        self.deltas = None
 
     def set_f(self, f):
         self.f = f
@@ -61,10 +97,10 @@ class HVP_RVR(Optimizer):
         else:
             K = 5 * (sigma2 ** 2 + l2 * eps) / (b * eps ** 2) * sum(
                 torch.norm(x1 - x2).pow(2) for x1, x2 in zip(x, x_prev))
-            print(K,sigma2,l2,eps,sum(
+            """print(K,sigma2,l2,eps,sum(
                 torch.norm(x1 - x2).pow(2) for x1, x2 in zip(x, x_prev)),sum(
                 torch.norm(x1 ).pow(2) for x1, x2 in zip(x, x_prev)),sum(
-                torch.norm( x2).pow(2) for x1, x2 in zip(x, x_prev)))
+                torch.norm( x2).pow(2) for x1, x2 in zip(x, x_prev)))"""
             K = min(K, 10)
             b = x_prev
             g = g_prev
@@ -108,7 +144,7 @@ class HVP_RVR(Optimizer):
 
         self.g = self.gradient_estimator(self.parameters, x_prev, self.g, self.b, self.sigma2, self.l2,
                                          self.eps)
-        self.deltas = self.cubic_regularization(self.eps, self.g, self.l1, 5*self.l2)
+        self.deltas = self.cubic_regularization(self.eps, self.g, self.l1, 5 * self.l2)
         for group in self.param_groups:
             for p, delta in zip(group["params"], self.deltas):
                 p.data += delta
@@ -238,6 +274,95 @@ class SCRN_Momentum(Optimizer):
         self.old_delta = [d1 * self.momentum + d2 for d1, d2 in zip(self.old_delta, deltas)]
         for group in self.param_groups:
             for p, delta in zip(group["params"], self.old_delta):
+                p.data += delta
+
+    def cubic_regularization(self, eps, grad):
+        g_norm = [torch.norm(g) for g in grad]
+        a = sum(g_norm)
+        if a >= ((self.l_ ** 2) / self.rho):
+            hgp = hvp(self.f, tuple(p for group in self.param_groups for p in group['params']),
+                      tuple(p.grad for group in self.param_groups for p in group['params']))[1]
+            temp = [g.reshape(-1) @ h.reshape(-1) / self.rho / a.pow(2) for g, h in zip(grad, hgp)]
+            R_c = [(-t + torch.sqrt(t.pow(2) + 2 * a / self.rho)) for t in temp]
+            delta = [-r * g / a for r, g in zip(R_c, grad)]
+            self.log.append(('1', a.item(), sum([torch.norm(d) for d in delta]).item()))
+        else:
+            delta = [torch.zeros(g.size()).to(self.device) for g in grad]
+            sigma = self.c_ * (eps * self.rho) ** 0.5 / self.l_
+            mu = 1.0 / (20.0 * self.l_)
+            vec = [(torch.rand(g.size()) * 2 + torch.ones(g.size())).to(self.device) for g in grad]
+            vec = [v / torch.norm(v) for v in vec]
+            g_ = [g + sigma * v for g, v in zip(grad, vec)]
+            for j in range(self.T_eps):
+                hdp = hvp(self.f, tuple(p for group in self.param_groups for p in group['params']),
+                          tuple(delta))[1]
+                delta = [(d - mu * (g + h + self.rho / 2 * torch.norm(d) * d)) for g, d, h in zip(g_, delta, hdp)]
+                # g_m = [(g + h + self.rho / 2 * torch.norm(d) * d) for g, d, h in zip(g_, delta2, hdp)]
+                # d2_norm = [torch.norm(d) for d in g_m]
+            self.log.append(('2', a.item(), sum([torch.norm(d) for d in delta]).item()))
+        return delta
+
+    def save_log(self, path='classifier_logs/classifier_logs/', flag_param=False):
+        if flag_param:
+            name = self.name + "_l_" + str(self.l) + "_rho_" + str(self.rho)
+        else:
+            name = self.name
+        f = open(path + name, 'w')
+        for l in self.log:
+            f.write(str(l) + '\n')
+        f.close()
+
+
+class SVRCRN(Optimizer):
+    def __init__(self, params, T_eps=10, l_=1,
+                 rho=1, c_=1, eps=1e-2, device=None):
+        if device is None:
+            device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+        super(SVRCRN, self).__init__(params, dict())
+        self.hes = None
+        self.T_eps = T_eps
+        self.l_ = l_
+        self.rho = rho
+        self.c_ = c_
+        self.eps = eps
+        self.params = params
+        self.f = None
+        self.device = device
+        self.log = []
+        self.name = 'SCRN'
+        self.deltas = None
+        self.vt = None
+
+    def set_l(self, l, rho):
+        self.l_ = l
+        self.rho = rho
+
+    def set_f(self, f):
+        self.f = f
+
+    def reset_vt(self):
+        self.vt = None
+
+    def step(self, **kwargs):
+        if torch.rand(1) < 0.2:
+            self.vt = None
+        if self.vt is None:
+            self.vt = [p.grad for group in self.param_groups for p in group['params']]
+        else:
+            # bug not working
+            p_grad = [p.grad for group in self.param_groups for p in group['params']]
+            old_param = [p - d for p, d in
+                         zip([p for group in self.param_groups for p in group['params']], self.deltas)]
+
+            old_grad = torch.autograd.grad(self.f(*old_param), old_param)
+            self.log.append((sum([torch.norm(o) for o in old_grad]), sum([torch.norm(o) for o in p_grad]),
+                             sum([torch.norm(o) for o in self.vt])))
+            self.vt = [g1 - g2 + g3 for g1, g2, g3 in zip(p_grad, old_grad, self.vt)]
+        grad = self.vt
+        self.deltas = self.cubic_regularization(self.eps, grad)
+        for group in self.param_groups:
+            for p, delta in zip(group["params"], self.deltas):
                 p.data += delta
 
     def cubic_regularization(self, eps, grad):
